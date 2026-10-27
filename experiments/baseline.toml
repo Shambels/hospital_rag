@@ -1,0 +1,25 @@
+# experiments/baseline.toml — the chapter 04 configuration, every experiment is compared to it
+name = "baseline"
+
+[chunking]
+max_tokens = 512
+overlap = 0
+patient_line = true
+
+[embedder]
+model = "bge-m3"
+query_instruction = ""
+
+[search]
+method = "hybrid"
+candidates = 30
+top_k = 5
+
+[reranker]
+model = "bge-reranker"
+
+[generation]
+system_prompt = "prompts/strict.txt"
+temperature = 0.0
+top_p = 1.0
+max_tokens = 512
