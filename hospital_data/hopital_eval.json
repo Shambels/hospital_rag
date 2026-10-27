@@ -1,0 +1,2785 @@
+[
+  {
+    "id": "Q001",
+    "type": "table",
+    "patient_ipp": "4100021",
+    "question": "Quelle était l'HbA1c de M. Jean Simon sur le bilan biologique d'avril 2025 ?",
+    "answer": "8,5 %.",
+    "evidence": [
+      {
+        "document": "4100021_2025-04-11_bilan.docx",
+        "snippets": [
+          "HbA1c",
+          "8,5"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100021_2025-04-18_consultation.docx",
+        "snippets": [
+          "HbA1c élevée"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "diabetes"
+  },
+  {
+    "id": "Q002",
+    "type": "cross_patient",
+    "patient_ipp": null,
+    "question": "Quels patients ont une allergie à l'arachide ?",
+    "answer": "Mme Michèle Bernard, M. Denis Moreau, M. Michel Lambert.",
+    "evidence": [
+      {
+        "document": "4100003_2025-05-19_consultation.docx",
+        "snippets": [
+          "Allergie alimentaire à l'arachide (œdème des lèvres en 2018)."
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100017_2025-11-17_consultation.docx",
+        "snippets": [
+          "Allergie alimentaire à l'arachide (œdème des lèvres en 2018)."
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "4100027_2025-02-16_consultation.docx",
+        "snippets": [
+          "Allergie alimentaire à l'arachide (œdème des lèvres en 2018)."
+        ],
+        "grade": 2,
+        "fact": 2
+      }
+    ],
+    "care_path": "allergies"
+  },
+  {
+    "id": "Q003",
+    "type": "imaging",
+    "patient_ipp": "4100037",
+    "question": "Quelle était la taille du calcul vu à l'échographie abdominale de Mme Sylvie Roux ?",
+    "answer": "10 mm.",
+    "evidence": [
+      {
+        "document": "4100037_2025-06-13_imagerie.pdf",
+        "snippets": [
+          "calcul de 10 mm"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "cholecystectomy"
+  },
+  {
+    "id": "Q004",
+    "type": "buried",
+    "patient_ipp": "4100029",
+    "question": "Quelle voie d'abord a été utilisée pour poser la prothèse de hanche de Mme Christine Laurent ?",
+    "answer": "Voie d'abord postéro-latérale.",
+    "evidence": [
+      {
+        "document": "4100029_2025-07-29_cro.docx",
+        "snippets": [
+          "Voie d'abord postéro-latérale"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hip_replacement"
+  },
+  {
+    "id": "Q005",
+    "type": "negation",
+    "patient_ipp": "4100039",
+    "question": "Mme Catherine Boyer a-t-elle été transfusée pendant la pose de sa prothèse de hanche ?",
+    "answer": "Non, sans transfusion.",
+    "evidence": [
+      {
+        "document": "4100039_2025-07-13_cro.docx",
+        "snippets": [
+          "sans transfusion"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hip_replacement"
+  },
+  {
+    "id": "Q006",
+    "type": "negation",
+    "patient_ipp": "4100019",
+    "question": "M. Alain Roux a-t-il été transfusé pendant la pose de sa prothèse de hanche ?",
+    "answer": "Non, sans transfusion.",
+    "evidence": [
+      {
+        "document": "4100019_2026-02-02_cro.docx",
+        "snippets": [
+          "sans transfusion"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hip_replacement"
+  },
+  {
+    "id": "Q007",
+    "type": "dose",
+    "patient_ipp": "4100002",
+    "question": "Quelle dose de ramipril prend actuellement M. Bruno Martin ?",
+    "answer": "5 mg par jour.",
+    "evidence": [
+      {
+        "document": "4100002_2025-04-13_ordonnance.docx",
+        "snippets": [
+          "Ramipril 5 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100002_2025-07-19_consultation.docx",
+        "snippets": [
+          "ramipril 5 mg par jour"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100002_2025-04-13_consultation.docx",
+        "snippets": [
+          "à 5 mg par jour"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q008",
+    "type": "temporal",
+    "patient_ipp": "4100031",
+    "question": "Quel médicament a été ajouté au traitement du diabète de M. Pascal Lefebvre lors de sa consultation de suivi ?",
+    "answer": "Dapagliflozine 10 mg, 1 comprimé le matin.",
+    "evidence": [
+      {
+        "document": "4100031_2025-12-22_consultation.docx",
+        "snippets": [
+          "Ajout de la dapagliflozine 10 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100031_2025-09-08_ordonnance.docx",
+        "snippets": [
+          "Metformine"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "diabetes"
+  },
+  {
+    "id": "Q009",
+    "type": "split",
+    "patient_ipp": "4100036",
+    "question": "Quel antibiotique a été prescrit en relais oral à Mme Françoise Gauthier après son exacerbation, à quelle posologie et pour quelle durée ?",
+    "answer": "Amoxicilline-acide clavulanique, 1 g trois fois par jour, pour une durée totale de 7 jours.",
+    "evidence": [
+      {
+        "document": "4100036_2025-08-20_sortie.docx",
+        "snippets": [
+          "relais oral par amoxicilline-acide clavulanique",
+          "1 g trois fois par jour pour une durée totale de 7 jours"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100036_2025-08-20_sortie.docx",
+        "snippets": [
+          "relais oral par amoxicilline-acide clavulanique"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100036_2025-08-20_sortie.docx",
+        "snippets": [
+          "1 g trois fois par jour pour une durée totale de 7 jours"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "copd"
+  },
+  {
+    "id": "Q010",
+    "type": "negation",
+    "patient_ipp": "4100036",
+    "question": "Mme Françoise Gauthier est-elle allergique à la pénicilline ?",
+    "answer": "Non, pas d'allergie médicamenteuse connue.",
+    "evidence": [
+      {
+        "document": "4100036_2025-05-07_consultation.docx",
+        "snippets": [
+          "Pas d'allergie médicamenteuse connue."
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100036_2025-08-20_sortie.docx",
+        "snippets": [
+          "Pas d'allergie médicamenteuse connue."
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "copd"
+  },
+  {
+    "id": "Q011",
+    "type": "table",
+    "patient_ipp": "4100005",
+    "question": "Quelle était la valeur du NT-proBNP de Mme Nathalie Girard au bilan de contrôle après sa sortie ?",
+    "answer": "1408 pg/mL.",
+    "evidence": [
+      {
+        "document": "4100005_2025-06-22_bilan.docx",
+        "snippets": [
+          "NT-proBNP",
+          "1408"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100005_2025-06-14_sortie.docx",
+        "snippets": [
+          "NT-proBNP"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q012",
+    "type": "multi_hop",
+    "patient_ipp": "4100028",
+    "question": "Quels effets indésirables de l'antibiotique prescrit à la sortie de Mme Colette Chevalier sont les plus courants ?",
+    "answer": "Diarrhée, nausées, candidoses, éruptions cutanées (amoxicilline-acide clavulanique).",
+    "evidence": [
+      {
+        "document": "4100028_2025-02-26_sortie.docx",
+        "snippets": [
+          "amoxicilline-acide clavulanique 1 g"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_amoxicilline_clavulanique.docx",
+        "snippets": [
+          "Diarrhée, nausées, candidoses"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "appendicitis"
+  },
+  {
+    "id": "Q013",
+    "type": "multi_hop",
+    "patient_ipp": "4100052",
+    "question": "En cas d'intubation en urgence, le suxaméthonium pourrait-il être utilisé chez M. Pierre Perrin ?",
+    "answer": "Il est à éviter : contre-indiqué en cas d'hyperkaliémie (kaliémie à 6,0 mmol/L sur le bilan du 04/07/2025). Le rocuronium est une alternative.",
+    "evidence": [
+      {
+        "document": "4100052_2025-07-12_consultation.docx",
+        "snippets": [
+          "Hyperkaliémie à 6,0 mmol/L"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100052_2025-07-04_bilan.docx",
+        "snippets": [
+          "Kaliémie",
+          "6,0"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_suxamethonium.docx",
+        "snippets": [
+          "il est évité chez les insuffisants rénaux dont la kaliémie est élevée"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "notice_suxamethonium.docx",
+        "snippets": [
+          "Hyperkaliémie. Antécédent personnel"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q014",
+    "type": "imaging",
+    "patient_ipp": "4100013",
+    "question": "Quelle fraction d'éjection du ventricule gauche a été mesurée à l'échographie de M. Philippe Andre ?",
+    "answer": "50 %.",
+    "evidence": [
+      {
+        "document": "4100013_2025-01-31_imagerie.pdf",
+        "snippets": [
+          "FEVG estimée à 50 %"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "atrial_fibrillation"
+  },
+  {
+    "id": "Q015",
+    "type": "cross_notice",
+    "patient_ipp": null,
+    "question": "Quels médicaments imposent un délai avant une rachianesthésie ?",
+    "answer": "L'apixaban (48 heures), l'énoxaparine à dose préventive (12 heures), et la metformine (arrêt le jour de l'intervention).",
+    "evidence": [
+      {
+        "document": "notice_apixaban.docx",
+        "snippets": [
+          "ou une anesthésie rachidienne"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_enoxaparine.docx",
+        "snippets": [
+          "au moins 12 heures entre la dernière injection"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "notice_metformine.docx",
+        "snippets": [
+          "rachianesthésie ou péridurale"
+        ],
+        "grade": 2,
+        "fact": 2
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q016",
+    "type": "split",
+    "patient_ipp": "4100056",
+    "question": "Quel antibiotique a été prescrit en relais oral à M. Claude Mathieu après son exacerbation, à quelle posologie et pour quelle durée ?",
+    "answer": "Amoxicilline-acide clavulanique, 1 g trois fois par jour, pour une durée totale de 5 jours.",
+    "evidence": [
+      {
+        "document": "4100056_2025-04-02_sortie.docx",
+        "snippets": [
+          "relais oral par amoxicilline-acide clavulanique",
+          "1 g trois fois par jour pour une durée totale de 5 jours"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100056_2025-04-02_sortie.docx",
+        "snippets": [
+          "relais oral par amoxicilline-acide clavulanique"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100056_2025-04-02_sortie.docx",
+        "snippets": [
+          "1 g trois fois par jour pour une durée totale de 5 jours"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "copd"
+  },
+  {
+    "id": "Q017",
+    "type": "buried",
+    "patient_ipp": "4100008",
+    "question": "Quel était l'aspect de l'appendice de Mme Monique Morin pendant l'opération ?",
+    "answer": "Appendice perforé avec péritonite localisée.",
+    "evidence": [
+      {
+        "document": "4100008_2025-04-06_cro.docx",
+        "snippets": [
+          "appendice perforé avec péritonite localisée"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "appendicitis"
+  },
+  {
+    "id": "Q018",
+    "type": "table",
+    "patient_ipp": "4100050",
+    "question": "Quelle était la TSH de M. Christian Bonnet au premier bilan biologique ?",
+    "answer": "9,3 mUI/L.",
+    "evidence": [
+      {
+        "document": "4100050_2025-03-10_bilan.docx",
+        "snippets": [
+          "TSH",
+          "9,3"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hypothyroidism"
+  },
+  {
+    "id": "Q019",
+    "type": "out_of_corpus",
+    "care_path": null,
+    "patient_ipp": "4100059",
+    "question": "Quel est le groupe sanguin de Mme Marie Morel ?",
+    "answer": "Information absente du dossier.",
+    "evidence": []
+  },
+  {
+    "id": "Q020",
+    "type": "cross_notice",
+    "patient_ipp": null,
+    "question": "Quels médicaments sont contre-indiqués ou doivent être adaptés quand le DFG est inférieur à 30 mL/min ?",
+    "answer": "Metformine et spironolactone (contre-indiquées), sitagliptine (25 mg par jour), amoxicilline-acide clavulanique (dose adaptée), énoxaparine (2000 UI par jour).",
+    "evidence": [
+      {
+        "document": "notice_metformine.docx",
+        "snippets": [
+          "DFG inférieur à 30 mL/min"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_spironolactone.docx",
+        "snippets": [
+          "DFG inférieur à 30 mL/min"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "notice_sitagliptine.docx",
+        "snippets": [
+          "25 mg par jour s'il est inférieur à 30 mL/min"
+        ],
+        "grade": 2,
+        "fact": 2
+      },
+      {
+        "document": "notice_amoxicilline_clavulanique.docx",
+        "snippets": [
+          "Adapter la dose si le DFG est inférieur à 30 mL/min"
+        ],
+        "grade": 2,
+        "fact": 3
+      },
+      {
+        "document": "notice_enoxaparine.docx",
+        "snippets": [
+          "2000 UI par jour si le DFG est inférieur à 30 mL/min"
+        ],
+        "grade": 2,
+        "fact": 4
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q021",
+    "type": "dose",
+    "patient_ipp": "4100039",
+    "question": "Pendant combien de jours Mme Catherine Boyer doit-elle faire des piqûres d'anticoagulant après sa prothèse ?",
+    "answer": "35 jours (énoxaparine 4000 UI, une injection par jour).",
+    "evidence": [
+      {
+        "document": "4100039_2025-07-16_sortie.docx",
+        "snippets": [
+          "Énoxaparine",
+          "35 jours"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hip_replacement"
+  },
+  {
+    "id": "Q022",
+    "type": "lay_language",
+    "patient_ipp": "4100044",
+    "question": "Quand Mme Claire Martinez a-t-elle fait sa crise cardiaque ?",
+    "answer": "Le 10/06/2025 (infarctus du myocarde antérieur).",
+    "evidence": [
+      {
+        "document": "4100044_2025-06-16_sortie.docx",
+        "snippets": [
+          "Infarctus du myocarde",
+          "10/06/2025"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "myocardial_infarction"
+  },
+  {
+    "id": "Q023",
+    "type": "split",
+    "patient_ipp": "4100026",
+    "question": "Quel antibiotique a été prescrit en relais oral à M. Gilles Garnier après son exacerbation, à quelle posologie et pour quelle durée ?",
+    "answer": "Amoxicilline-acide clavulanique, 1 g trois fois par jour, pour une durée totale de 5 jours.",
+    "evidence": [
+      {
+        "document": "4100026_2026-04-06_sortie.docx",
+        "snippets": [
+          "relais oral par amoxicilline-acide clavulanique",
+          "1 g trois fois par jour pour une durée totale de 5 jours"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100026_2026-04-06_sortie.docx",
+        "snippets": [
+          "relais oral par amoxicilline-acide clavulanique"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100026_2026-04-06_sortie.docx",
+        "snippets": [
+          "1 g trois fois par jour pour une durée totale de 5 jours"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "copd"
+  },
+  {
+    "id": "Q024",
+    "type": "negation",
+    "patient_ipp": "4100008",
+    "question": "Mme Monique Morin est-elle sortie de l'hôpital avec des antibiotiques ?",
+    "answer": "Oui, pour une durée totale de 5 jours.",
+    "evidence": [
+      {
+        "document": "4100008_2025-04-10_sortie.docx",
+        "snippets": [
+          "pour une durée totale de 5 jours"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "appendicitis"
+  },
+  {
+    "id": "Q025",
+    "type": "dose",
+    "patient_ipp": "4100053",
+    "question": "Quelle dose d'apixaban a été prescrite à M. Claude Nicolas ?",
+    "answer": "2,5 mg matin et soir.",
+    "evidence": [
+      {
+        "document": "4100053_2025-05-15_ordonnance.docx",
+        "snippets": [
+          "Apixaban 2,5 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100053_2025-05-15_consultation.docx",
+        "snippets": [
+          "apixaban 2,5 mg matin et soir"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "atrial_fibrillation"
+  },
+  {
+    "id": "Q026",
+    "type": "negation",
+    "patient_ipp": "4100016",
+    "question": "Mme Béatrice Dupont est-elle allergique à la pénicilline ?",
+    "answer": "Oui (urticaire généralisée en 2009).",
+    "evidence": [
+      {
+        "document": "4100016_2025-07-13_consultation.docx",
+        "snippets": [
+          "Allergie à la pénicilline (urticaire généralisée en 2009)."
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100016_2025-09-18_sortie.docx",
+        "snippets": [
+          "Allergie à la pénicilline (urticaire généralisée en 2009)."
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "copd"
+  },
+  {
+    "id": "Q027",
+    "type": "table",
+    "patient_ipp": "4100001",
+    "question": "Quelle était l'HbA1c de Mme Anne Dubois sur le bilan biologique de juin 2025 ?",
+    "answer": "8,4 %.",
+    "evidence": [
+      {
+        "document": "4100001_2025-06-30_bilan.docx",
+        "snippets": [
+          "HbA1c",
+          "8,4"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100001_2025-07-07_consultation.docx",
+        "snippets": [
+          "HbA1c élevée"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "diabetes"
+  },
+  {
+    "id": "Q028",
+    "type": "imaging",
+    "patient_ipp": "4100008",
+    "question": "Le scanner abdominal de Mme Monique Morin montrait-il une perforation de l'appendice ?",
+    "answer": "Oui, avec une petite collection de 25 mm.",
+    "evidence": [
+      {
+        "document": "4100008_2025-04-06_imagerie.pdf",
+        "snippets": [
+          "évoquant une perforation"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "appendicitis"
+  },
+  {
+    "id": "Q029",
+    "type": "lay_language",
+    "patient_ipp": "4100033",
+    "question": "Quel trouble du rythme cardiaque a été découvert chez M. Robert Sanchez ?",
+    "answer": "Une fibrillation auriculaire (FA) paroxystique.",
+    "evidence": [
+      {
+        "document": "4100033_2025-12-13_consultation.docx",
+        "snippets": [
+          "FA paroxystique"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100033_2025-12-24_imagerie.pdf",
+        "snippets": [
+          "fibrillation auriculaire"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "atrial_fibrillation"
+  },
+  {
+    "id": "Q030",
+    "type": "multi_hop",
+    "patient_ipp": "4100040",
+    "question": "Combien de temps avant le petit-déjeuner Mme Brigitte Richard doit-elle prendre son traitement de la thyroïde ?",
+    "answer": "30 minutes avant le petit-déjeuner, le matin à jeun (lévothyroxine).",
+    "evidence": [
+      {
+        "document": "4100040_2026-01-15_consultation.docx",
+        "snippets": [
+          "lévothyroxine à 25 µg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100040_2026-05-16_consultation.docx",
+        "snippets": [
+          "Lévothyroxine maintenue à 50 µg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_levothyroxine.docx",
+        "snippets": [
+          "30 minutes avant le petit-déjeuner"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "hypothyroidism"
+  },
+  {
+    "id": "Q031",
+    "type": "split",
+    "patient_ipp": "4100005",
+    "question": "Quel jour le relais oral des diurétiques a-t-il été décidé pour Mme Nathalie Girard, et à quelle dose de furosémide ?",
+    "answer": "Le 12/06/2025, avec du furosémide à 60 mg le matin.",
+    "evidence": [
+      {
+        "document": "4100005_2025-06-14_sortie.docx",
+        "snippets": [
+          "relais par voie orale a été décidé le 12/06/2025",
+          "furosémide à 60 mg le matin"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100005_2025-06-14_sortie.docx",
+        "snippets": [
+          "relais par voie orale a été décidé le 12/06/2025"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100005_2025-06-14_sortie.docx",
+        "snippets": [
+          "furosémide à 60 mg le matin"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q032",
+    "type": "table",
+    "patient_ipp": "4100060",
+    "question": "Quelle était la TSH de Mme Évelyne Durand au premier bilan biologique ?",
+    "answer": "9,9 mUI/L.",
+    "evidence": [
+      {
+        "document": "4100060_2025-06-14_bilan.docx",
+        "snippets": [
+          "TSH",
+          "9,9"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hypothyroidism"
+  },
+  {
+    "id": "Q033",
+    "type": "drug_info",
+    "patient_ipp": null,
+    "question": "Quel est l'effet indésirable grave, quoique très rare, de la metformine ?",
+    "answer": "L'acidose lactique.",
+    "evidence": [
+      {
+        "document": "notice_metformine.docx",
+        "snippets": [
+          "Très rare mais grave : acidose lactique"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q034",
+    "type": "abbreviation",
+    "patient_ipp": "4100016",
+    "question": "Quelle est la sévérité de la bronchopneumopathie chronique obstructive de Mme Béatrice Dupont ?",
+    "answer": "Stade GOLD 3, VEMS à 48 % de la théorique.",
+    "evidence": [
+      {
+        "document": "4100016_2025-07-13_consultation.docx",
+        "snippets": [
+          "BPCO stade GOLD 3"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100016_2025-07-13_consultation.docx",
+        "snippets": [
+          "VEMS à 48 %"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "copd"
+  },
+  {
+    "id": "Q035",
+    "type": "table",
+    "patient_ipp": "4100055",
+    "question": "Quelle était la valeur du NT-proBNP de M. Denis Petit au bilan de contrôle après sa sortie ?",
+    "answer": "2096 pg/mL.",
+    "evidence": [
+      {
+        "document": "4100055_2025-08-03_bilan.docx",
+        "snippets": [
+          "NT-proBNP",
+          "2096"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100055_2025-07-23_sortie.docx",
+        "snippets": [
+          "NT-proBNP"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q036",
+    "type": "cross_patient",
+    "patient_ipp": null,
+    "question": "Quels patients ont eu un drain de Redon après leur cholécystectomie ?",
+    "answer": "M. René Fontaine, Mme Josiane Masson.",
+    "evidence": [
+      {
+        "document": "4100047_2025-11-25_cro.docx",
+        "snippets": [
+          "Mise en place d'un drain de Redon"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100057_2025-06-20_cro.docx",
+        "snippets": [
+          "Mise en place d'un drain de Redon"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "drain"
+  },
+  {
+    "id": "Q037",
+    "type": "multi_hop",
+    "patient_ipp": "4100055",
+    "question": "Quels examens biologiques faut-il surveiller chez M. Denis Petit à cause de son diurétique ?",
+    "answer": "La kaliémie, la natrémie et la créatinine (furosémide).",
+    "evidence": [
+      {
+        "document": "4100055_2025-07-23_sortie.docx",
+        "snippets": [
+          "Furosémide",
+          "60 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100055_2025-07-23_ordonnance.docx",
+        "snippets": [
+          "Furosémide 60 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_furosemide.docx",
+        "snippets": [
+          "Surveiller la kaliémie, la natrémie et la créatinine"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q038",
+    "type": "drug_info",
+    "patient_ipp": null,
+    "question": "Combien de temps après l'arrêt du métronidazole faut-il continuer à éviter l'alcool ?",
+    "answer": "48 heures.",
+    "evidence": [
+      {
+        "document": "notice_metronidazole.docx",
+        "snippets": [
+          "jusqu'à 48 heures après son arrêt"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q039",
+    "type": "out_of_corpus",
+    "care_path": null,
+    "patient_ipp": "4100006",
+    "question": "Quels sont les résultats de l'IRM cérébrale de M. Marcel Thomas ?",
+    "answer": "Information absente du dossier.",
+    "evidence": []
+  },
+  {
+    "id": "Q040",
+    "type": "split",
+    "patient_ipp": "4100055",
+    "question": "Quel jour le relais oral des diurétiques a-t-il été décidé pour M. Denis Petit, et à quelle dose de furosémide ?",
+    "answer": "Le 19/07/2025, avec du furosémide à 60 mg le matin.",
+    "evidence": [
+      {
+        "document": "4100055_2025-07-23_sortie.docx",
+        "snippets": [
+          "relais par voie orale a été décidé le 19/07/2025",
+          "furosémide à 60 mg le matin"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100055_2025-07-23_sortie.docx",
+        "snippets": [
+          "relais par voie orale a été décidé le 19/07/2025"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100055_2025-07-23_sortie.docx",
+        "snippets": [
+          "furosémide à 60 mg le matin"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q041",
+    "type": "temporal",
+    "patient_ipp": "4100025",
+    "question": "Quelle est la dose actuelle de furosémide de Mme Martine Mercier ?",
+    "answer": "40 mg le matin.",
+    "evidence": [
+      {
+        "document": "4100025_2025-08-27_consultation.docx",
+        "snippets": [
+          "furosémide à 40 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100025_2025-07-18_sortie.docx",
+        "snippets": [
+          "Furosémide",
+          "60 mg"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100025_2025-07-18_ordonnance.docx",
+        "snippets": [
+          "Furosémide 60 mg"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q042",
+    "type": "drug_info",
+    "patient_ipp": null,
+    "question": "Quel effet indésirable respiratoire est très fréquent sous ticagrelor ?",
+    "answer": "Une dyspnée (essoufflement).",
+    "evidence": [
+      {
+        "document": "notice_ticagrelor.docx",
+        "snippets": [
+          "Très fréquents : saignements, dyspnée"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q043",
+    "type": "buried",
+    "patient_ipp": "4100027",
+    "question": "Quelles ont été les pertes sanguines estimées pendant l'opération de M. Michel Lambert ?",
+    "answer": "20 mL.",
+    "evidence": [
+      {
+        "document": "4100027_2025-03-27_cro.docx",
+        "snippets": [
+          "pertes sanguines sont estimées à 20 mL"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "cholecystectomy"
+  },
+  {
+    "id": "Q044",
+    "type": "imaging",
+    "patient_ipp": "4100057",
+    "question": "Quelle était la taille du calcul vu à l'échographie abdominale de Mme Josiane Masson ?",
+    "answer": "20 mm.",
+    "evidence": [
+      {
+        "document": "4100057_2025-05-08_imagerie.pdf",
+        "snippets": [
+          "calcul de 20 mm"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "cholecystectomy"
+  },
+  {
+    "id": "Q045",
+    "type": "out_of_corpus",
+    "care_path": null,
+    "patient_ipp": "4100003",
+    "question": "Quelle dose de metformine prend Mme Michèle Bernard ?",
+    "answer": "Information absente du dossier.",
+    "evidence": []
+  },
+  {
+    "id": "Q046",
+    "type": "abbreviation",
+    "patient_ipp": "4100022",
+    "question": "À quel stade est l'insuffisance rénale chronique de Mme Odile Dubois ?",
+    "answer": "Stade 3b.",
+    "evidence": [
+      {
+        "document": "4100022_2025-03-03_consultation.docx",
+        "snippets": [
+          "IRC stade 3b"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q047",
+    "type": "split",
+    "patient_ipp": "4100045",
+    "question": "Quel jour le relais oral des diurétiques a-t-il été décidé pour Mme Valérie Roussel, et à quelle dose de furosémide ?",
+    "answer": "Le 14/03/2025, avec du furosémide à 60 mg le matin.",
+    "evidence": [
+      {
+        "document": "4100045_2025-03-18_sortie.docx",
+        "snippets": [
+          "relais par voie orale a été décidé le 14/03/2025",
+          "furosémide à 60 mg le matin"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100045_2025-03-18_sortie.docx",
+        "snippets": [
+          "relais par voie orale a été décidé le 14/03/2025"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100045_2025-03-18_sortie.docx",
+        "snippets": [
+          "furosémide à 60 mg le matin"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q048",
+    "type": "cross_patient",
+    "patient_ipp": null,
+    "question": "Chez quels patients l'échocardiographie a-t-elle montré une insuffisance mitrale ?",
+    "answer": "Mme Michèle Bernard, Mme Patricia Robin, M. Louis David, M. Claude Nicolas.",
+    "evidence": [
+      {
+        "document": "4100003_2025-06-04_imagerie.pdf",
+        "snippets": [
+          "Insuffisance mitrale"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100023_2025-08-29_imagerie.pdf",
+        "snippets": [
+          "Insuffisance mitrale"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "4100043_2026-01-13_imagerie.pdf",
+        "snippets": [
+          "Insuffisance mitrale"
+        ],
+        "grade": 2,
+        "fact": 2
+      },
+      {
+        "document": "4100053_2025-06-03_imagerie.pdf",
+        "snippets": [
+          "Insuffisance mitrale"
+        ],
+        "grade": 2,
+        "fact": 3
+      }
+    ],
+    "care_path": "insuffisance_mitrale"
+  },
+  {
+    "id": "Q049",
+    "type": "buried",
+    "patient_ipp": "4100024",
+    "question": "Quel stent a été posé chez M. Gérard Bertrand et sur quelle artère ?",
+    "answer": "Un stent actif de 2,5 x 15 mm sur l'coronaire droite moyenne.",
+    "evidence": [
+      {
+        "document": "4100024_2025-04-24_coronarographie.docx",
+        "snippets": [
+          "stent actif de 2,5 x 15 mm sur l'coronaire droite moyenne"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "myocardial_infarction"
+  },
+  {
+    "id": "Q050",
+    "type": "cross_patient",
+    "patient_ipp": null,
+    "question": "Quels patients ont une insuffisance rénale chronique de stade 4 ?",
+    "answer": "M. Didier Michel, M. Pierre Perrin.",
+    "evidence": [
+      {
+        "document": "4100032_2025-09-02_consultation.docx",
+        "snippets": [
+          "IRC stade 4"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100052_2025-07-12_consultation.docx",
+        "snippets": [
+          "IRC stade 4"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "irc_stade_4"
+  },
+  {
+    "id": "Q051",
+    "type": "dose",
+    "patient_ipp": "4100012",
+    "question": "Quelle dose de ramipril prend actuellement M. Thierry Francois ?",
+    "answer": "5 mg par jour.",
+    "evidence": [
+      {
+        "document": "4100012_2025-11-24_ordonnance.docx",
+        "snippets": [
+          "Ramipril 5 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100012_2026-03-08_consultation.docx",
+        "snippets": [
+          "ramipril 5 mg par jour"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100012_2025-11-24_consultation.docx",
+        "snippets": [
+          "à 5 mg par jour"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q052",
+    "type": "temporal",
+    "patient_ipp": "4100052",
+    "question": "Pourquoi la dose de ramipril de M. Pierre Perrin a-t-elle été réduite ?",
+    "answer": "À cause d'une hyperkaliémie à 6,0 mmol/L.",
+    "evidence": [
+      {
+        "document": "4100052_2025-07-12_consultation.docx",
+        "snippets": [
+          "Hyperkaliémie à 6,0 mmol/L",
+          "réduction du ramipril"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100052_2025-10-13_consultation.docx",
+        "snippets": [
+          "après réduction du ramipril"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q053",
+    "type": "abbreviation",
+    "patient_ipp": "4100002",
+    "question": "À quel stade est l'insuffisance rénale chronique de M. Bruno Martin ?",
+    "answer": "Stade 3b.",
+    "evidence": [
+      {
+        "document": "4100002_2025-04-13_consultation.docx",
+        "snippets": [
+          "IRC stade 3b"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q054",
+    "type": "drug_info",
+    "patient_ipp": null,
+    "question": "Quel antifongique est contre-indiqué avec le gliclazide ?",
+    "answer": "Le miconazole.",
+    "evidence": [
+      {
+        "document": "notice_gliclazide.docx",
+        "snippets": [
+          "Association au miconazole"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q055",
+    "type": "buried",
+    "patient_ipp": "4100004",
+    "question": "Quel stent a été posé chez Mme Corinne Legrand et sur quelle artère ?",
+    "answer": "Un stent actif de 3,0 x 22 mm sur l'IVA moyenne.",
+    "evidence": [
+      {
+        "document": "4100004_2025-12-03_coronarographie.docx",
+        "snippets": [
+          "stent actif de 3,0 x 22 mm sur l'IVA moyenne"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "myocardial_infarction"
+  },
+  {
+    "id": "Q056",
+    "type": "dose",
+    "patient_ipp": "4100014",
+    "question": "Pendant combien de temps Mme Simone Fournier doit-elle prendre du ticagrelor ?",
+    "answer": "12 mois, à 90 mg matin et soir.",
+    "evidence": [
+      {
+        "document": "4100014_2025-02-24_sortie.docx",
+        "snippets": [
+          "Ticagrelor",
+          "12 mois"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100014_2025-02-24_ordonnance.docx",
+        "snippets": [
+          "Ticagrelor 90 mg",
+          "pendant 12 mois"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100014_2025-04-30_consultation.docx",
+        "snippets": [
+          "ticagrelor jusqu'à 12 mois"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "myocardial_infarction"
+  },
+  {
+    "id": "Q057",
+    "type": "cross_patient",
+    "patient_ipp": null,
+    "question": "Quels patients ont reçu un stent sur l'artère interventriculaire antérieure ?",
+    "answer": "Mme Corinne Legrand, Mme Simone Fournier, Mme Claire Martinez.",
+    "evidence": [
+      {
+        "document": "4100004_2025-12-03_coronarographie.docx",
+        "snippets": [
+          "stent actif de 3,0 x 22 mm sur l'IVA moyenne"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100014_2025-02-18_coronarographie.docx",
+        "snippets": [
+          "stent actif de 3,5 x 18 mm sur l'IVA moyenne"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "4100044_2025-06-10_coronarographie.docx",
+        "snippets": [
+          "stent actif de 3,5 x 22 mm sur l'IVA moyenne"
+        ],
+        "grade": 2,
+        "fact": 2
+      }
+    ],
+    "care_path": "stent_iva"
+  },
+  {
+    "id": "Q058",
+    "type": "cross_notice",
+    "patient_ipp": null,
+    "question": "Quels médicaments du livret peuvent provoquer une hypokaliémie ?",
+    "answer": "Le furosémide et le salbutamol à fortes doses.",
+    "evidence": [
+      {
+        "document": "notice_furosemide.docx",
+        "snippets": [
+          "Hypokaliémie, déshydratation"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_salbutamol.docx",
+        "snippets": [
+          "hypokaliémie à fortes doses"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q059",
+    "type": "split",
+    "patient_ipp": "4100046",
+    "question": "Quel antibiotique a été prescrit en relais oral à M. Henri Faure après son exacerbation, à quelle posologie et pour quelle durée ?",
+    "answer": "Amoxicilline-acide clavulanique, 1 g trois fois par jour, pour une durée totale de 7 jours.",
+    "evidence": [
+      {
+        "document": "4100046_2026-05-22_sortie.docx",
+        "snippets": [
+          "relais oral par amoxicilline-acide clavulanique",
+          "1 g trois fois par jour pour une durée totale de 7 jours"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100046_2026-05-22_sortie.docx",
+        "snippets": [
+          "relais oral par amoxicilline-acide clavulanique"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100046_2026-05-22_sortie.docx",
+        "snippets": [
+          "1 g trois fois par jour pour une durée totale de 7 jours"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "copd"
+  },
+  {
+    "id": "Q060",
+    "type": "multi_hop",
+    "patient_ipp": "4100039",
+    "question": "Si Mme Catherine Boyer devait avoir une nouvelle rachianesthésie pendant son traitement anticoagulant préventif, quel délai faudrait-il respecter après la dernière injection ?",
+    "answer": "Au moins 12 heures après la dernière injection d'énoxaparine à dose préventive.",
+    "evidence": [
+      {
+        "document": "4100039_2025-07-16_sortie.docx",
+        "snippets": [
+          "Énoxaparine",
+          "4000 UI"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_enoxaparine.docx",
+        "snippets": [
+          "au moins 12 heures entre la dernière injection à dose préventive et la ponction"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "notice_bupivacaine.docx",
+        "snippets": [
+          "Respecter les délais d'arrêt des anticoagulants"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "hip_replacement"
+  },
+  {
+    "id": "Q061",
+    "type": "lay_language",
+    "patient_ipp": "4100020",
+    "question": "Pourquoi la thyroïde de M. Guy Girard fonctionne-t-elle au ralenti ?",
+    "answer": "Hypothyroïdie due à une thyroïdectomie partielle ancienne.",
+    "evidence": [
+      {
+        "document": "4100020_2026-02-21_consultation.docx",
+        "snippets": [
+          "Hypothyroïdie en rapport avec une thyroïdectomie partielle ancienne"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hypothyroidism"
+  },
+  {
+    "id": "Q062",
+    "type": "cross_patient",
+    "patient_ipp": null,
+    "question": "Quels patients ont une hypothyroïdie due à une thyroïdite de Hashimoto ?",
+    "answer": "M. Luc Robert, Mme Hélène Leroy.",
+    "evidence": [
+      {
+        "document": "4100010_2025-10-31_consultation.docx",
+        "snippets": [
+          "thyroïdite de Hashimoto"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100030_2025-08-25_consultation.docx",
+        "snippets": [
+          "thyroïdite de Hashimoto"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "hashimoto"
+  },
+  {
+    "id": "Q063",
+    "type": "negation",
+    "patient_ipp": "4100053",
+    "question": "L'échographie cardiaque de M. Claude Nicolas montre-t-elle une atteinte des valves ?",
+    "answer": "Oui, une insuffisance mitrale.",
+    "evidence": [
+      {
+        "document": "4100053_2025-06-03_imagerie.pdf",
+        "snippets": [
+          "Insuffisance mitrale"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "atrial_fibrillation"
+  },
+  {
+    "id": "Q064",
+    "type": "cross_notice",
+    "patient_ipp": null,
+    "question": "Quels antibiotiques du livret peut-on utiliser en cas d'allergie à la pénicilline ?",
+    "answer": "La pristinamycine, la clindamycine (antibioprophylaxie) et la lévofloxacine.",
+    "evidence": [
+      {
+        "document": "notice_pristinamycine.docx",
+        "snippets": [
+          "utilisable en cas d'allergie aux pénicillines"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_clindamycine.docx",
+        "snippets": [
+          "Antibioprophylaxie chirurgicale en cas d'allergie aux bêtalactamines"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "notice_levofloxacine.docx",
+        "snippets": [
+          "notamment en cas d'allergie aux bêtalactamines"
+        ],
+        "grade": 2,
+        "fact": 2
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q065",
+    "type": "negation",
+    "patient_ipp": "4100027",
+    "question": "Y a-t-il eu un incident pendant l'opération de la vésicule de M. Michel Lambert ?",
+    "answer": "Non, aucun incident per-opératoire.",
+    "evidence": [
+      {
+        "document": "4100027_2025-03-27_cro.docx",
+        "snippets": [
+          "Aucun incident per-opératoire"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "cholecystectomy"
+  },
+  {
+    "id": "Q066",
+    "type": "cross_notice",
+    "patient_ipp": null,
+    "question": "Quels médicaments du livret thérapeutique sont contre-indiqués en cas d'hyperkaliémie ?",
+    "answer": "Le suxaméthonium et la spironolactone.",
+    "evidence": [
+      {
+        "document": "notice_suxamethonium.docx",
+        "snippets": [
+          "Hyperkaliémie. Antécédent personnel"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_spironolactone.docx",
+        "snippets": [
+          "Hyperkaliémie (kaliémie supérieure à 5,0 mmol/L)"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q067",
+    "type": "cross_patient",
+    "patient_ipp": null,
+    "question": "Quels patients diabétiques ont commencé l'insuline glargine ?",
+    "answer": "Mme Anne Dubois, M. Jacques Clement, Mme Sophie Muller.",
+    "evidence": [
+      {
+        "document": "4100001_2025-11-04_consultation.docx",
+        "snippets": [
+          "Ajout de l'insuline glargine 10 UI"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100011_2025-06-30_consultation.docx",
+        "snippets": [
+          "Ajout de l'insuline glargine 10 UI"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "4100051_2026-04-12_consultation.docx",
+        "snippets": [
+          "Ajout de l'insuline glargine 10 UI"
+        ],
+        "grade": 2,
+        "fact": 2
+      }
+    ],
+    "care_path": "ajout_insuline_glargine"
+  },
+  {
+    "id": "Q068",
+    "type": "split",
+    "patient_ipp": "4100015",
+    "question": "Quel jour le relais oral des diurétiques a-t-il été décidé pour Mme Jeanne Simon, et à quelle dose de furosémide ?",
+    "answer": "Le 15/11/2025, avec du furosémide à 120 mg le matin.",
+    "evidence": [
+      {
+        "document": "4100015_2025-11-19_sortie.docx",
+        "snippets": [
+          "relais par voie orale a été décidé le 15/11/2025",
+          "furosémide à 120 mg le matin"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100015_2025-11-19_sortie.docx",
+        "snippets": [
+          "relais par voie orale a été décidé le 15/11/2025"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100015_2025-11-19_sortie.docx",
+        "snippets": [
+          "furosémide à 120 mg le matin"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q069",
+    "type": "abbreviation",
+    "patient_ipp": "4100009",
+    "question": "De quel côté M. André Guerin a-t-il reçu une prothèse totale de hanche ?",
+    "answer": "Hanche droite.",
+    "evidence": [
+      {
+        "document": "4100009_2025-08-20_consultation.docx",
+        "snippets": [
+          "PTH droite programmée"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100009_2025-10-12_sortie.docx",
+        "snippets": [
+          "PTH droite réalisée"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100009_2025-11-23_consultation.docx",
+        "snippets": [
+          "PTH droite"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hip_replacement"
+  },
+  {
+    "id": "Q070",
+    "type": "out_of_corpus",
+    "care_path": null,
+    "patient_ipp": null,
+    "question": "Quels sont les effets indésirables de l'ibuprofène ?",
+    "answer": "Information absente du dossier.",
+    "evidence": []
+  },
+  {
+    "id": "Q071",
+    "type": "multi_hop",
+    "patient_ipp": "4100006",
+    "question": "Quels effets indésirables de la corticothérapie prescrite à M. Marcel Thomas après son exacerbation faut-il surveiller ?",
+    "answer": "Hyperglycémie, insomnie, excitation, rétention hydrosodée, augmentation de l'appétit (prednisone).",
+    "evidence": [
+      {
+        "document": "4100006_2025-10-28_sortie.docx",
+        "snippets": [
+          "prednisone 40 mg par jour pendant 5 jours"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_prednisone.docx",
+        "snippets": [
+          "Hyperglycémie, insomnie, excitation, rétention hydrosodée"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "copd"
+  },
+  {
+    "id": "Q072",
+    "type": "multi_hop",
+    "patient_ipp": "4100031",
+    "question": "M. Pascal Lefebvre doit passer un scanner avec injection de produit de contraste iodé : que faut-il faire de son traitement du diabète ?",
+    "answer": "Arrêter la metformine au moment de l'examen et ne la reprendre que 48 heures après, si la fonction rénale est stable.",
+    "evidence": [
+      {
+        "document": "4100031_2025-09-08_ordonnance.docx",
+        "snippets": [
+          "Metformine 850 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100031_2025-09-08_consultation.docx",
+        "snippets": [
+          "metformine à 850 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100031_2025-12-22_consultation.docx",
+        "snippets": [
+          "metformine 850 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_metformine.docx",
+        "snippets": [
+          "arrêter la metformine au moment de l'examen et ne la reprendre que 48 heures après"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "notice_iohexol.docx",
+        "snippets": [
+          "Metformine à suspendre au moment de l'examen"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "diabetes"
+  },
+  {
+    "id": "Q073",
+    "type": "table",
+    "patient_ipp": "4100052",
+    "question": "Quel était le débit de filtration glomérulaire de M. Pierre Perrin sur le bilan de juillet 2025 ?",
+    "answer": "22 mL/min/1,73 m².",
+    "evidence": [
+      {
+        "document": "4100052_2025-07-04_bilan.docx",
+        "snippets": [
+          "DFG",
+          "22"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q074",
+    "type": "abbreviation",
+    "patient_ipp": "4100056",
+    "question": "Quelle est la sévérité de la bronchopneumopathie chronique obstructive de M. Claude Mathieu ?",
+    "answer": "Stade GOLD 3, VEMS à 45 % de la théorique.",
+    "evidence": [
+      {
+        "document": "4100056_2025-01-11_consultation.docx",
+        "snippets": [
+          "BPCO stade GOLD 3"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100056_2025-01-11_consultation.docx",
+        "snippets": [
+          "VEMS à 45 %"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "copd"
+  },
+  {
+    "id": "Q075",
+    "type": "out_of_corpus",
+    "care_path": null,
+    "patient_ipp": null,
+    "question": "Quel traitement a été prescrit à M. Kevin Durand pour son asthme ?",
+    "answer": "Information absente du dossier.",
+    "evidence": []
+  },
+  {
+    "id": "Q076",
+    "type": "drug_info",
+    "patient_ipp": null,
+    "question": "Quelle est la dose maximale de paracétamol par jour chez un adulte de moins de 50 kg ?",
+    "answer": "3 g par jour.",
+    "evidence": [
+      {
+        "document": "notice_paracetamol.docx",
+        "snippets": [
+          "Dose maximale de 3 g par jour si le poids est inférieur à 50 kg"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q077",
+    "type": "abbreviation",
+    "patient_ipp": "4100045",
+    "question": "L'insuffisance cardiaque de Mme Valérie Roussel est-elle à fraction d'éjection réduite ou préservée ?",
+    "answer": "À fraction d'éjection réduite (ICFEr, FEVG 31 %).",
+    "evidence": [
+      {
+        "document": "4100045_2025-03-18_sortie.docx",
+        "snippets": [
+          "ICFEr (FEVG 31 %)"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q078",
+    "type": "multi_hop",
+    "patient_ipp": "4100012",
+    "question": "Si M. Thierry Francois recevait de la morphine après une opération, quelle précaution faudrait-il prendre ?",
+    "answer": "Réduire les doses et espacer les prises, à cause de son insuffisance rénale (IRC stade 3b) : risque d'accumulation, de somnolence et de dépression respiratoire.",
+    "evidence": [
+      {
+        "document": "4100012_2025-11-24_consultation.docx",
+        "snippets": [
+          "IRC stade 3b"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_morphine.docx",
+        "snippets": [
+          "réduire les doses et espacer les prises"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q079",
+    "type": "lay_language",
+    "patient_ipp": "4100030",
+    "question": "Pourquoi la thyroïde de Mme Hélène Leroy fonctionne-t-elle au ralenti ?",
+    "answer": "Hypothyroïdie due à une thyroïdite de Hashimoto (anticorps anti-TPO très élevés).",
+    "evidence": [
+      {
+        "document": "4100030_2025-08-25_consultation.docx",
+        "snippets": [
+          "Hypothyroïdie en rapport avec une thyroïdite de Hashimoto (anticorps anti-TPO très élevés)"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hypothyroidism"
+  },
+  {
+    "id": "Q080",
+    "type": "dose",
+    "patient_ipp": "4100051",
+    "question": "Quelle est la posologie de metformine prescrite à Mme Sophie Muller ?",
+    "answer": "Metformine 500 mg, matin, midi et soir.",
+    "evidence": [
+      {
+        "document": "4100051_2025-12-30_ordonnance.docx",
+        "snippets": [
+          "Metformine 500 mg",
+          "matin, midi et soir"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100051_2025-12-30_consultation.docx",
+        "snippets": [
+          "metformine à 500 mg matin, midi et soir"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100051_2026-04-12_consultation.docx",
+        "snippets": [
+          "metformine 500 mg matin, midi et soir"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "diabetes"
+  },
+  {
+    "id": "Q081",
+    "type": "temporal",
+    "patient_ipp": "4100051",
+    "question": "Quel médicament a été ajouté au traitement du diabète de Mme Sophie Muller lors de sa consultation de suivi ?",
+    "answer": "Insuline glargine 10 ui, 1 injection sous-cutanée le soir.",
+    "evidence": [
+      {
+        "document": "4100051_2026-04-12_consultation.docx",
+        "snippets": [
+          "Ajout de l'insuline glargine 10 UI"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100051_2025-12-30_ordonnance.docx",
+        "snippets": [
+          "Metformine"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "diabetes"
+  },
+  {
+    "id": "Q082",
+    "type": "buried",
+    "patient_ipp": "4100027",
+    "question": "Combien de temps a duré l'intervention chirurgicale de M. Michel Lambert ?",
+    "answer": "102 minutes.",
+    "evidence": [
+      {
+        "document": "4100027_2025-03-27_cro.docx",
+        "snippets": [
+          "Durée de l'intervention : 102 minutes"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "cholecystectomy"
+  },
+  {
+    "id": "Q083",
+    "type": "buried",
+    "patient_ipp": "4100048",
+    "question": "Quel était l'aspect de l'appendice de M. Bernard Petit pendant l'opération ?",
+    "answer": "Appendice perforé avec péritonite localisée.",
+    "evidence": [
+      {
+        "document": "4100048_2025-04-27_cro.docx",
+        "snippets": [
+          "appendice perforé avec péritonite localisée"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "appendicitis"
+  },
+  {
+    "id": "Q084",
+    "type": "abbreviation",
+    "patient_ipp": "4100059",
+    "question": "De quel côté Mme Marie Morel a-t-elle reçu une prothèse totale de hanche ?",
+    "answer": "Hanche gauche.",
+    "evidence": [
+      {
+        "document": "4100059_2026-01-17_consultation.docx",
+        "snippets": [
+          "PTH gauche programmée"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100059_2026-03-24_sortie.docx",
+        "snippets": [
+          "PTH gauche réalisée"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100059_2026-04-30_consultation.docx",
+        "snippets": [
+          "PTH gauche"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hip_replacement"
+  },
+  {
+    "id": "Q085",
+    "type": "out_of_corpus",
+    "care_path": null,
+    "patient_ipp": "4100003",
+    "question": "Quand Mme Michèle Bernard a-t-elle été vaccinée contre la grippe ?",
+    "answer": "Information absente du dossier.",
+    "evidence": []
+  },
+  {
+    "id": "Q086",
+    "type": "multi_hop",
+    "patient_ipp": "4100033",
+    "question": "M. Robert Sanchez doit être opéré sous rachianesthésie : combien de temps avant faut-il arrêter son anticoagulant ?",
+    "answer": "48 heures avant (apixaban, anesthésie rachidienne), sans relais par héparine.",
+    "evidence": [
+      {
+        "document": "4100033_2025-12-13_ordonnance.docx",
+        "snippets": [
+          "Apixaban 2,5 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100033_2025-12-13_consultation.docx",
+        "snippets": [
+          "apixaban 2,5 mg matin et soir"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_apixaban.docx",
+        "snippets": [
+          "48 heures avant une intervention à risque hémorragique élevé ou une anesthésie rachidienne"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "notice_bupivacaine.docx",
+        "snippets": [
+          "Respecter les délais d'arrêt des anticoagulants"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "atrial_fibrillation"
+  },
+  {
+    "id": "Q087",
+    "type": "buried",
+    "patient_ipp": "4100009",
+    "question": "Quelle voie d'abord a été utilisée pour poser la prothèse de hanche de M. André Guerin ?",
+    "answer": "Voie d'abord antérieure.",
+    "evidence": [
+      {
+        "document": "4100009_2025-10-09_cro.docx",
+        "snippets": [
+          "Voie d'abord antérieure"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hip_replacement"
+  },
+  {
+    "id": "Q088",
+    "type": "lay_language",
+    "patient_ipp": "4100027",
+    "question": "Quand M. Michel Lambert a-t-il été opéré de la vésicule biliaire ?",
+    "answer": "Le 27/03/2025 (cholécystectomie par cœlioscopie).",
+    "evidence": [
+      {
+        "document": "4100027_2025-03-28_sortie.docx",
+        "snippets": [
+          "Cholécystectomie par cœlioscopie réalisée le 27/03/2025"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100027_2025-02-16_consultation.docx",
+        "snippets": [
+          "programmée le 27/03/2025"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100027_2025-04-30_consultation.docx",
+        "snippets": [
+          "cholécystectomie du 27/03/2025"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "cholecystectomy"
+  },
+  {
+    "id": "Q089",
+    "type": "multi_hop",
+    "patient_ipp": "4100005",
+    "question": "Le médecin traitant de Mme Nathalie Girard envisage d'ajouter du ramipril : est-ce possible ?",
+    "answer": "Non : l'association d'un IEC comme le ramipril au sacubitril/valsartan est contre-indiquée (il faut 36 heures entre les deux).",
+    "evidence": [
+      {
+        "document": "4100005_2025-06-14_sortie.docx",
+        "snippets": [
+          "Sacubitril/valsartan",
+          "24/26 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100005_2025-06-14_ordonnance.docx",
+        "snippets": [
+          "Sacubitril/valsartan 24/26 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_sacubitril_valsartan.docx",
+        "snippets": [
+          "arrêter l'IEC au moins 36 heures avant la première prise"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "notice_ramipril.docx",
+        "snippets": [
+          "Association au sacubitril/valsartan"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q090",
+    "type": "multi_hop",
+    "patient_ipp": "4100017",
+    "question": "Quels sont les effets indésirables les plus fréquents de l'antalgique prescrit à M. Denis Moreau en cas de douleur non soulagée ?",
+    "answer": "Nausées et vertiges (tramadol).",
+    "evidence": [
+      {
+        "document": "4100017_2025-12-19_sortie.docx",
+        "snippets": [
+          "Tramadol 50 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_tramadol.docx",
+        "snippets": [
+          "Très fréquents : nausées, vertiges"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "cholecystectomy"
+  },
+  {
+    "id": "Q091",
+    "type": "lay_language",
+    "patient_ipp": "4100024",
+    "question": "Quand M. Gérard Bertrand a-t-il fait sa crise cardiaque ?",
+    "answer": "Le 24/04/2025 (infarctus du myocarde inférieur).",
+    "evidence": [
+      {
+        "document": "4100024_2025-04-29_sortie.docx",
+        "snippets": [
+          "Infarctus du myocarde",
+          "24/04/2025"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "myocardial_infarction"
+  },
+  {
+    "id": "Q092",
+    "type": "cross_notice",
+    "patient_ipp": null,
+    "question": "Quels médicaments faut-il arrêter ou suspendre avant une chirurgie programmée, et avec quel délai ?",
+    "answer": "Apixaban (24 à 48 heures avant), ticagrelor (5 jours avant, après avis du cardiologue), dapagliflozine (au moins 3 jours avant), metformine (le jour de l'intervention), ramipril (la veille d'une anesthésie générale).",
+    "evidence": [
+      {
+        "document": "notice_apixaban.docx",
+        "snippets": [
+          "arrêter l'apixaban 24 heures avant"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_ticagrelor.docx",
+        "snippets": [
+          "arrêter le ticagrelor 5 jours avant l'intervention"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "notice_dapagliflozine.docx",
+        "snippets": [
+          "Suspendre la dapagliflozine au moins 3 jours avant une chirurgie programmée"
+        ],
+        "grade": 2,
+        "fact": 2
+      },
+      {
+        "document": "notice_metformine.docx",
+        "snippets": [
+          "arrêter la metformine le jour de l'intervention"
+        ],
+        "grade": 2,
+        "fact": 3
+      },
+      {
+        "document": "notice_ramipril.docx",
+        "snippets": [
+          "suspendu la veille de l'intervention"
+        ],
+        "grade": 2,
+        "fact": 4
+      }
+    ],
+    "care_path": "notices"
+  },
+  {
+    "id": "Q093",
+    "type": "temporal",
+    "patient_ipp": "4100055",
+    "question": "Quelle est la dose actuelle de furosémide de M. Denis Petit ?",
+    "answer": "40 mg le matin.",
+    "evidence": [
+      {
+        "document": "4100055_2025-09-17_consultation.docx",
+        "snippets": [
+          "furosémide à 40 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100055_2025-07-23_sortie.docx",
+        "snippets": [
+          "Furosémide",
+          "60 mg"
+        ],
+        "grade": 1,
+        "fact": null
+      },
+      {
+        "document": "4100055_2025-07-23_ordonnance.docx",
+        "snippets": [
+          "Furosémide 60 mg"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "heart_failure"
+  },
+  {
+    "id": "Q094",
+    "type": "table",
+    "patient_ipp": "4100042",
+    "question": "Quel était le débit de filtration glomérulaire de M. Roger Martin sur le bilan de juillet 2025 ?",
+    "answer": "36 mL/min/1,73 m².",
+    "evidence": [
+      {
+        "document": "4100042_2025-07-22_bilan.docx",
+        "snippets": [
+          "DFG",
+          "36"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q095",
+    "type": "dose",
+    "patient_ipp": "4100031",
+    "question": "Quelle est la posologie de metformine prescrite à M. Pascal Lefebvre ?",
+    "answer": "Metformine 850 mg, matin, midi et soir.",
+    "evidence": [
+      {
+        "document": "4100031_2025-09-08_ordonnance.docx",
+        "snippets": [
+          "Metformine 850 mg",
+          "matin, midi et soir"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100031_2025-09-08_consultation.docx",
+        "snippets": [
+          "metformine à 850 mg matin, midi et soir"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100031_2025-12-22_consultation.docx",
+        "snippets": [
+          "metformine 850 mg matin, midi et soir"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "diabetes"
+  },
+  {
+    "id": "Q096",
+    "type": "temporal",
+    "patient_ipp": "4100010",
+    "question": "Quelle est la dose actuelle de lévothyroxine de M. Luc Robert ?",
+    "answer": "88 µg par jour.",
+    "evidence": [
+      {
+        "document": "4100010_2026-03-18_consultation.docx",
+        "snippets": [
+          "Lévothyroxine maintenue à 88 µg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100010_2025-12-28_consultation.docx",
+        "snippets": [
+          "de 50 µg à 88 µg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100010_2025-10-31_consultation.docx",
+        "snippets": [
+          "lévothyroxine à 50 µg"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "hypothyroidism"
+  },
+  {
+    "id": "Q097",
+    "type": "temporal",
+    "patient_ipp": "4100032",
+    "question": "Pourquoi la dose de ramipril de M. Didier Michel a-t-elle été réduite ?",
+    "answer": "À cause d'une hyperkaliémie à 6,0 mmol/L.",
+    "evidence": [
+      {
+        "document": "4100032_2025-09-02_consultation.docx",
+        "snippets": [
+          "Hyperkaliémie à 6,0 mmol/L",
+          "réduction du ramipril"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100032_2025-12-08_consultation.docx",
+        "snippets": [
+          "après réduction du ramipril"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "kidney"
+  },
+  {
+    "id": "Q098",
+    "type": "multi_hop",
+    "patient_ipp": "4100004",
+    "question": "La veille d'une anesthésie générale, quel médicament de Mme Corinne Legrand est habituellement suspendu à cause du risque d'hypotension ?",
+    "answer": "Le ramipril (1,25 mg le matin).",
+    "evidence": [
+      {
+        "document": "4100004_2025-12-07_sortie.docx",
+        "snippets": [
+          "Ramipril",
+          "1,25 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100004_2025-12-07_ordonnance.docx",
+        "snippets": [
+          "Ramipril 1,25 mg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "notice_ramipril.docx",
+        "snippets": [
+          "suspendu la veille de l'intervention"
+        ],
+        "grade": 2,
+        "fact": 1
+      }
+    ],
+    "care_path": "myocardial_infarction"
+  },
+  {
+    "id": "Q099",
+    "type": "lay_language",
+    "patient_ipp": "4100023",
+    "question": "Quel trouble du rythme cardiaque a été découvert chez Mme Patricia Robin ?",
+    "answer": "Une fibrillation auriculaire (FA) paroxystique.",
+    "evidence": [
+      {
+        "document": "4100023_2025-08-10_consultation.docx",
+        "snippets": [
+          "FA paroxystique"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100023_2025-08-29_imagerie.pdf",
+        "snippets": [
+          "fibrillation auriculaire"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "atrial_fibrillation"
+  },
+  {
+    "id": "Q100",
+    "type": "abbreviation",
+    "patient_ipp": "4100021",
+    "question": "En quelle année le diabète de type 2 de M. Jean Simon a-t-il été diagnostiqué ?",
+    "answer": "En 2014.",
+    "evidence": [
+      {
+        "document": "4100021_2025-04-18_consultation.docx",
+        "snippets": [
+          "DT2 diagnostiqué en 2014"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "diabetes"
+  },
+  {
+    "id": "Q101",
+    "type": "cross_patient",
+    "patient_ipp": null,
+    "question": "Quels patients ont une BPCO de stade GOLD 3 ?",
+    "answer": "M. Marcel Thomas, Mme Béatrice Dupont, M. Gilles Garnier, M. Henri Faure, M. Claude Mathieu.",
+    "evidence": [
+      {
+        "document": "4100006_2025-07-03_consultation.docx",
+        "snippets": [
+          "BPCO stade GOLD 3"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100016_2025-07-13_consultation.docx",
+        "snippets": [
+          "BPCO stade GOLD 3"
+        ],
+        "grade": 2,
+        "fact": 1
+      },
+      {
+        "document": "4100026_2025-12-29_consultation.docx",
+        "snippets": [
+          "BPCO stade GOLD 3"
+        ],
+        "grade": 2,
+        "fact": 2
+      },
+      {
+        "document": "4100046_2026-02-20_consultation.docx",
+        "snippets": [
+          "BPCO stade GOLD 3"
+        ],
+        "grade": 2,
+        "fact": 3
+      },
+      {
+        "document": "4100056_2025-01-11_consultation.docx",
+        "snippets": [
+          "BPCO stade GOLD 3"
+        ],
+        "grade": 2,
+        "fact": 4
+      }
+    ],
+    "care_path": "gold_3"
+  },
+  {
+    "id": "Q102",
+    "type": "imaging",
+    "patient_ipp": "4100058",
+    "question": "Le scanner abdominal de M. Jacques Rousseau montrait-il une perforation de l'appendice ?",
+    "answer": "Non, absence de perforation.",
+    "evidence": [
+      {
+        "document": "4100058_2025-10-07_imagerie.pdf",
+        "snippets": [
+          "Absence de perforation"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "appendicitis"
+  },
+  {
+    "id": "Q103",
+    "type": "dose",
+    "patient_ipp": "4100059",
+    "question": "Pendant combien de jours Mme Marie Morel doit-elle faire des piqûres d'anticoagulant après sa prothèse ?",
+    "answer": "35 jours (énoxaparine 4000 UI, une injection par jour).",
+    "evidence": [
+      {
+        "document": "4100059_2026-03-24_sortie.docx",
+        "snippets": [
+          "Énoxaparine",
+          "35 jours"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "hip_replacement"
+  },
+  {
+    "id": "Q104",
+    "type": "temporal",
+    "patient_ipp": "4100050",
+    "question": "Quelle est la dose actuelle de lévothyroxine de M. Christian Bonnet ?",
+    "answer": "50 µg par jour.",
+    "evidence": [
+      {
+        "document": "4100050_2025-07-17_consultation.docx",
+        "snippets": [
+          "Lévothyroxine maintenue à 50 µg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100050_2025-05-08_consultation.docx",
+        "snippets": [
+          "de 25 µg à 50 µg"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100050_2025-03-22_consultation.docx",
+        "snippets": [
+          "lévothyroxine à 25 µg"
+        ],
+        "grade": 1,
+        "fact": null
+      }
+    ],
+    "care_path": "hypothyroidism"
+  },
+  {
+    "id": "Q105",
+    "type": "negation",
+    "patient_ipp": "4100058",
+    "question": "M. Jacques Rousseau est-il sorti de l'hôpital avec des antibiotiques ?",
+    "answer": "Non, pas d'antibiothérapie à la sortie.",
+    "evidence": [
+      {
+        "document": "4100058_2025-10-08_sortie.docx",
+        "snippets": [
+          "Pas d'antibiothérapie à la sortie"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "appendicitis"
+  },
+  {
+    "id": "Q106",
+    "type": "lay_language",
+    "patient_ipp": "4100017",
+    "question": "Quand M. Denis Moreau a-t-il été opéré de la vésicule biliaire ?",
+    "answer": "Le 17/12/2025 (cholécystectomie par cœlioscopie).",
+    "evidence": [
+      {
+        "document": "4100017_2025-12-19_sortie.docx",
+        "snippets": [
+          "Cholécystectomie par cœlioscopie réalisée le 17/12/2025"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100017_2025-11-17_consultation.docx",
+        "snippets": [
+          "programmée le 17/12/2025"
+        ],
+        "grade": 2,
+        "fact": 0
+      },
+      {
+        "document": "4100017_2026-01-17_consultation.docx",
+        "snippets": [
+          "cholécystectomie du 17/12/2025"
+        ],
+        "grade": 2,
+        "fact": 0
+      }
+    ],
+    "care_path": "cholecystectomy"
+  }
+]
