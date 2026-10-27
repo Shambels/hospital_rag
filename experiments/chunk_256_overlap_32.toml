@@ -1,0 +1,25 @@
+# experiments/chunks_256_overlap_32.toml
+name = "chunks_256_overlap_32"
+
+[chunking]
+max_tokens = 256
+overlap = 32
+patient_line = true
+
+[embedder]
+model = "bge-m3"
+query_instruction = ""
+
+[search]
+method = "hybrid"
+candidates = 30
+top_k = 5
+
+[reranker]
+model = "bge-reranker"
+
+[generation]
+system_prompt = "prompts/strict.txt"
+temperature = 0.0
+top_p = 1.0
+max_tokens = 512
