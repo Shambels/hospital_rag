@@ -8,19 +8,22 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+  "deepeval>=2.9.3",
   "docling>=2.94",
-    "gguf>=0.19.0",
-    "ipykernel>=7.3.0",
-    "jupyterlab>=4.6.4",
-    "matplotlib>=3.11.2",
-    "openai>=3.15.0",
-    "polars>=1.44.2",
-    "psycopg[binary]>=3.3.6",
-    "pymupdf>=1.28.2",
-    "python-dotenv>=1.2.4",
-    "qdrant-client>=1.19.1",
-    "requests>=2.34.2",
-    "transformers>=5.19.0",
+  "gguf>=0.19.0",
+  "ipykernel>=7.3.0",
+  "jupyterlab>=4.6.4",
+  "matplotlib>=3.11.2",
+  "openai>=3.15.0",
+  "polars>=1.44.2",
+  "psycopg[binary]>=3.3.6",
+  "pydantic-settings>=2.16.1",
+  "pymupdf>=1.28.2",
+  "python-dotenv>=1.2.4",
+  "qdrant-client>=1.19.1",
+  "requests>=2.34.2",
+  "streamlit>=1.66.1",
+  "transformers>=5.19.0",
 ]
 
 [project.scripts]
