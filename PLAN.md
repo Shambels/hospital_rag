@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 (`db.py`) and 8 (`etl/convert.py`) done and tested; `config.py` fixed. Next: step 9 (`etl/chunk.py`).
+- **Phase 1:** steps 7 (`db.py`), 8 (`etl/convert.py`) and 9 (`etl/chunk.py`) done and tested; `config.py` fixed. Next: step 10 (`etl/index.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -35,7 +35,7 @@ Bottom-up. Test each module before starting the next.
 - [x] 8. **`etl/convert.py`:** Docling conversion of DOCX and PDF files, cached as JSON so each document is converted once.
    - `get_converter(ocr=False)`, `convert_documents(force=False, ocr=False)` → list of failures, `load_document(name)` → `DoclingDocument`.
    - The old fix list is covered: syntax error, `PdfFormatOption` import, `ocr_settings.ocr_num_threads`, `artifacts_path` always set, `InputFormat.DOC` dropped, loop over the corpus with a cache.
-   - OCR off: the 24 PDFs have a text layer (about 700 characters, no images). Layout and table models still run, from `DOCLING_MODELS_PATH`.
+   - OCR off: the 24 PDFs have a text layer (about 700 characters, no images). Layout and table models still run, from `MODELS_PATH/docling`.
    - Each JSON is written to a `.tmp` file then renamed, so a crash can't leave a half-written file that the cache would skip.
    - A failing document is logged and listed, the others carry on.
    - `data/conversions/` added to `.gitignore`: generated files, rebuilt by `scripts/ingest.py`.
@@ -45,10 +45,25 @@ Bottom-up. Test each module before starting the next.
    And in `config.py` (done with step 7, since `db.py` needs it):
    - [x] `extra="ignore"`: `.env` also holds `DB_USER`, `DB_PASSWORD`, `DB_NAME` for docker-compose, and pydantic-settings rejected them;
    - [x] `Path('../../data/docs')` depended on the current directory: now `data/docs`, `data/conversions`, plus `documents_path` and `eval_path` (scripts run from the repo root);
-   - [x] `docling_models_path` moved to `.env` (`DOCLING_MODELS_PATH`) and `.env.example`;
+   - [x] machine paths moved to `.env` and `.env.example`: `MODELS_PATH` (holds `embedder/`, `reranker/`, `docling/`); `settings.docling_models_path` is derived from it;
    - [x] `ip_address` and the unused `import os` removed;
    - [x] `JUDGE_URL` added (see step 18b).
-- [ ] 9. **`etl/chunk.py`:** HybridChunker with `max_tokens - overlap`, then `add_overlap()` on `chunk.text`, then the patient line and headings, in that order (§2).
+- [x] 9. **`etl/chunk.py`:** HybridChunker with `max_tokens - overlap`, then `add_overlap()` on `chunk.text`, then the patient line and headings, in that order (§2).
+   - `chunk_document(meta, config)` and `chunk_corpus(config)` → dicts with the document's metadata (from `hopital_documents.json`), `chunk_index` and `text`.
+   - Tokens are counted with the embedder's own tokenizer, loaded from `MODELS_PATH/embedder/{embedder.model}`. **Rule: an embedder's served name = its folder name** (see [Services](#swap-models-for-5)).
+   - Patient line: `Patient : M. Bruno MARTIN (IPP 4100002) — Ordonnance du 13/04/2025`, built from the metadata; none for notices (their headings name the drug).
+   - The chunker gets `max_tokens - overlap - tokens of the patient line`, so the final text stays under `max_tokens`.
+   - Tested (evidence coverage = grade-2 evidence whose snippets are all in one chunk, a ceiling on recall):
+
+     | Config | Chunks | Max tokens | Coverage |
+     |---|---|---|---|
+     | 512 / 0 (baseline) | 1173 | 378 | 174/174 |
+     | 256 / 32 | 1207 | 255 | 174/174 |
+     | 128 / 0 | 1456 | 127 | 170/174 (4 `split`) |
+     | 128 / 16 | 1608 | 128 | 170/174 (4 `split`) |
+     | 64 / 0 | 3357 | 64 | 156/174 |
+
+   - **Seen for step 21:** HybridChunker already cuts at every heading, and the sections are short (85 tokens on average at 512). Sizes of 256 and above barely change the chunks; the size only starts to matter at 128 and below. Overlap 16 doesn't recover the 4 `split` misses at 128: try a larger overlap.
 - [ ] 10. **`etl/index.py`:**
     - Dense embeddings plus BM25 sparse vectors.
     - One collection per `{embedder}__{max_tokens}_{overlap}`, skipped if it already exists.
@@ -171,7 +186,7 @@ vLLM (version 0.31.0, in `~/vllm_server/.venv`):
 | Flag | Why |
 |---|---|
 | `--runner pooling` | Serves the model as an embedder / scorer (`/v1/embeddings`, `/rerank`) instead of a text generator. |
-| `--served-model-name` | The name to pass as `model=` in the client. Keep it equal to `embedder.model` / `reranker.model` in the TOML files. |
+| `--served-model-name` | The name to pass as `model=` in the client. Keep it equal to `embedder.model` / `reranker.model` in the TOML files. For embedders, also equal to the model's folder name: `chunk.py` loads the tokenizer from `MODELS_PATH/embedder/{embedder.model}`. |
 | `--dtype float16` | bge-m3 and bge-reranker are stored in fp32; fp16 halves the memory with no measurable quality loss. The Qwen3 models are already bf16, so no flag needed. |
 | `--max-model-len 2048` | A 512-token chunk plus the question fits with margin. A smaller context means less memory reserved. |
 | `--gpu-memory-utilization 0.10` | Each vLLM instance reserves this share of the **whole** GPU (~2.4 GB), enough for a 0.6B model. If startup fails with a memory error, raise it to 0.12. |
@@ -209,11 +224,11 @@ Embedders (terminal 1). They need the `Instruct: {task}\nQuery: {question}` form
 
 ```bash
 ~/vllm_server/.venv/bin/vllm serve ~/models/rag/models/embedder/qwen3-embedding-0.6b \
-  --runner pooling --served-model-name qwen3-embedding --port 8001 \
+  --runner pooling --served-model-name qwen3-embedding-0.6b --port 8001 \
   --max-model-len 2048 --gpu-memory-utilization 0.10 --enforce-eager
 
 ~/vllm_server/.venv/bin/vllm serve ~/models/rag/models/embedder/harrier-oss-v1-0.6b \
-  --runner pooling --served-model-name harrier --port 8001 \
+  --runner pooling --served-model-name harrier-oss-v1-0.6b --port 8001 \
   --max-model-len 2048 --gpu-memory-utilization 0.10 --enforce-eager
 ```
 
