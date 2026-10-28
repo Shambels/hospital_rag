@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 (`db.py`), 8 (`etl/convert.py`) and 9 (`etl/chunk.py`) done and tested; `config.py` fixed. Next: step 10 (`etl/index.py`).
+- **Phase 1:** steps 7 to 10 (`db.py`, `etl/convert.py`, `etl/chunk.py`, `etl/index.py`) done and tested; `config.py` fixed. Next: step 11 (`scripts/ingest.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -63,11 +63,18 @@ Bottom-up. Test each module before starting the next.
      | 128 / 16 | 1608 | 128 | 170/174 (4 `split`) |
      | 64 / 0 | 3357 | 64 | 156/174 |
 
-   - **Seen for step 21:** HybridChunker already cuts at every heading, and the sections are short (85 tokens on average at 512). Sizes of 256 and above barely change the chunks; the size only starts to matter at 128 and below. Overlap 16 doesn't recover the 4 `split` misses at 128: try a larger overlap.
-- [ ] 10. **`etl/index.py`:**
+   - **Seen for step 21:** HybridChunker already cuts at every heading, and the sections are short (85 tokens on average at 512). Sizes of 256 and above barely change the chunks; the size only starts to matter at 128 and below. Overlap 16 doesn't recover the 4 `split` misses at 128: try a - [x] 10. **`etl/index.py`:**
     - Dense embeddings plus BM25 sparse vectors.
     - One collection per `{embedder}__{max_tokens}_{overlap}`, skipped if it already exists.
     - The payload carries the metadata from `hopital_documents.json`, with payload indexes on `patient_ipp`, `doc_type` and `date`.
+    - `index_corpus(config, force=False)` → `{collection, chunks, created, seconds}`; `embed(texts, model)` and `bm25(text)` are reused by `rag/search.py`, so chunks and questions are always encoded the same way.
+    - Name: `hopital__bge-m3__512_0`, plus `__no-patient-line` when `patient_line = false`. Any new `[chunking]` option must be added to `collection_name()`. `query_instruction` isn't in the name: it only changes the questions.
+    - BM25 is computed by the Qdrant server (`qdrant/bm25`, French: stemming and stopwords), with the IDF modifier: no extra package.
+    - Dense size read from the embedder's answer, cosine distance. Payload indexes: `patient_ipp`, `doc_type`, `care_path`, `document` (keyword) and `date` (datetime, `YYYY-MM-DD` accepted).
+    - "Already indexed" = the collection exists **and** has as many points as the chunking produces; otherwise it is rebuilt (crash halfway, or chunking changed under the same name).
+    - Tested: 1173 chunks indexed in 7.2 s; second run skips; dense size 1024; Q007 in hybrid search returns the 3 evidence documents in the top 3.
+    - **Seen for later:** the top chunk for Q007 says « Ramipril 10 mg » (consultation of 13/04), but the expected answer is 5 mg (the dose was changed). The right documents are found; choosing the most recent one is the `temporal` trap, for the reranker and the prompt.
+pe` and `date`.
 - [ ] 11. **`scripts/ingest.py`:** read the TOML and call the indexing function. Run it for the baseline.
 - [ ] 12. **`rag/search.py`:** dense, sparse, and hybrid search with RRF or DBSF and an optional filter (from notebook 05).
 - [ ] 13. **`rag/rerank.py`:** call `RERANK_URL` and keep the top_k results.
