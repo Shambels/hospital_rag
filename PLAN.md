@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 to 12 done and tested: the ETL is complete, `rag/search.py` works. Next: step 13 (`rag/rerank.py`).
+- **Phase 1:** steps 7 to 13 done and tested: the ETL is complete, search and reranking work. Next: step 14 (`rag/generate.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -96,7 +96,23 @@ pe` and `date`.
 
     - **Seen for later:** hit@30 = 1.00, so a relevant chunk is always among the candidates: everything the reranker can gain is there. `lay_language` is the weakest type (2/8 at hit@5), as expected for vocabulary mismatch. RRF below dense alone, DBSF above: a 2–4 question difference, to confirm with the real metrics in step 22.
     - Patient filter checked: Q007 with `patient_ipp = 4100002` → only that patient's chunks.
-- [ ] 13. **`rag/rerank.py`:** call `RERANK_URL` and keep the top_k results.
+- [x] 13. **`rag/rerank.py`:** call `RERANK_URL` and keep the top_k results.
+    - `rerank(question, chunks, config)` → the `top_k` best chunks, each with a `rerank_score` (the `search_score` is kept).
+    - `[reranker] model = "none"` keeps the search order: measures what the reranker brings, without a second code path.
+    - The reranker reads the full chunk text, patient line and headings included.
+    - One `requests.Session` reused for every call; `raise_for_status()` so a server error stops the run instead of returning nothing.
+    - Tested on the 100 questions (baseline: hybrid RRF, 30 candidates, top 5; quick relevance check), stored as temporary experiment `search_hybrid_rrf_rerank`:
+
+      | | hit@5 | MRR@5 | ms / question |
+      |---|---|---|---|
+      | search only | 0.85 | 0.702 | 50 |
+      | search + bge-reranker | **0.95** | **0.833** | 50 + 101 |
+
+    - Gains: `lay_language` 2→6/8, `abbreviation` 6→8, `cross_patient` 6→8, `negation` 7→8, `table` 7→8. 11 questions gained, 1 lost (Q013).
+    - **Seen for later**, the 5 misses:
+      - `multi_hop` Q013, Q037, Q078: the reranker scores each chunk against the whole question, so it favours one side (the notice, or the wrong part of the record); the second fact is at rank 9–11. → question decomposition (§8), larger `top_k` (§3).
+      - `lay_language` Q088, Q106 (« opéré de la vésicule » / cholécystectomie): the right chunk is at rank 6. → `top_k` 10 (§3), query rewriting (§8).
+      - The header chunk of every document holds the « Document fictif généré pour un cours… » disclaimer, and it sometimes ranks in the top 2 (Q013, Q078): noise worth noting in `RAPPORT.md`.
 - [ ] 14. **`rag/generate.py`:** read the prompt file, build the messages with numbered extracts (`[1] ...`, `[2] ...`, then `Question : ...`), and pass temperature, top_p, max_tokens and `extra_body` top_k from the config.
 - [ ] 15. **`rag/pipeline.py`:** `answer(question, config) -> (answer, chunks)`. Scripts, evaluation and the future API all call this.
 - [ ] 16. **`scripts/ask.py`:** a few lines. Use it as a smoke test.
@@ -117,7 +133,7 @@ pe` and `date`.
     - `evaluation/report.py` reads every experiment and score (`sql/report_*.sql`); the page (`templates/report.html`) computes the means itself.
     - Sections: **leaderboard** (mean per metric, ± between runs of the same name, difference with `baseline`, the config keys that differ from it, best per column, sortable), **by question type** (heatmap, hardest types first), **compare two experiments** (per type, then the questions improved and degraded), **runs not finished**.
     - Runs with the same `name` are grouped as repeats (the 3 runs per temperature of step 23). The reference is the experiment named `baseline`, or the first one until it exists.
-    - **To delete before step 20:** 4 temporary experiments from the step 12 test (`search_hybrid_rrf`, `search_dense`, `search_sparse`, `search_hybrid_dbsf`; retrieval only, quick relevance check): `DELETE FROM experiments WHERE name LIKE 'search\_%';` (cascade removes their scores).
+    - **To delete before step 20:** 5 temporary experiments from the step 12 and 13 tests (`search_hybrid_rrf`, `search_dense`, `search_sparse`, `search_hybrid_dbsf`, `search_hybrid_rrf_rerank`; retrieval only, quick relevance check): `DELETE FROM experiments WHERE name LIKE 'search\_%';` (cascade removes their scores).
 
 ## Phase 2 — The baseline
 
