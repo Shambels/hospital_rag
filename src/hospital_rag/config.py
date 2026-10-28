@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
 
 class OcrSettings(BaseSettings):
-    """Docling OCR settings, read from the environment (OCR_DEVICE, OCR_NUM_THREADS)."""
+    """Device and threads of the Docling PDF models (layout, tables, OCR), read from OCR_DEVICE, OCR_NUM_THREADS."""
     ocr_device: str = "cpu"
     ocr_num_threads: int = 10
 

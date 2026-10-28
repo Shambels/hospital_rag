@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** step 7 (`db.py`) done and tested; `config.py` fixed. Next: step 8 (`etl/convert.py`).
+- **Phase 1:** steps 7 (`db.py`) and 8 (`etl/convert.py`) done and tested; `config.py` fixed. Next: step 9 (`etl/chunk.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -32,13 +32,15 @@ Bottom-up. Test each module before starting the next.
    - `insert_scores()` is an upsert: re-running the judge replaces its scores.
    - The queries live in `src/hospital_rag/sql/*.sql` (one per file), read by `load_sql()` with `importlib.resources`, so they work from scripts, notebooks, the UI or the API. `compare_experiments()` runs the §7 comparison query.
    - Tested: tables created twice, insert, upsert, JSONB query, comparison query, cascade delete; SQL files load from outside the repo.
-- [ ] 8. **`etl/convert.py`** *(in progress)*: Docling conversion of DOCX and PDF files, cached as JSON so each document is converted once. To fix before it runs:
-   - [ ] syntax error: `get_converter(` wraps the next two lines;
-   - [ ] import `PdfFormatOption`;
-   - [ ] `num_threads = ocr_settings` should be `ocr_settings.ocr_num_threads`;
-   - [ ] set `artifacts_path` in both branches, not only with OCR, or Docling tries to download its models;
-   - [ ] drop `InputFormat.DOC` (probably not a Docling format, and the corpus is DOCX and PDF only);
-   - [ ] `convert()` takes one file: loop over `corpus_path`, save each result as JSON in the export folder, skip files already converted.
+- [x] 8. **`etl/convert.py`:** Docling conversion of DOCX and PDF files, cached as JSON so each document is converted once.
+   - `get_converter(ocr=False)`, `convert_documents(force=False, ocr=False)` → list of failures, `load_document(name)` → `DoclingDocument`.
+   - The old fix list is covered: syntax error, `PdfFormatOption` import, `ocr_settings.ocr_num_threads`, `artifacts_path` always set, `InputFormat.DOC` dropped, loop over the corpus with a cache.
+   - OCR off: the 24 PDFs have a text layer (about 700 characters, no images). Layout and table models still run, from `DOCLING_MODELS_PATH`.
+   - Each JSON is written to a `.tmp` file then renamed, so a crash can't leave a half-written file that the cache would skip.
+   - A failing document is logged and listed, the others carry on.
+   - `data/conversions/` added to `.gitignore`: generated files, rebuilt by `scripts/ingest.py`.
+   - Tested: 280/280 converted in 35 s, 0 failures; second run converts nothing; lab report tables come out as tables; PDF text present; conversion works with `HF_HUB_OFFLINE=1`.
+   - Seen for step 9: in the PDFs, the header (patient, IPP, date, author) is merged into one paragraph. The patient line must come from `hopital_documents.json`, not from parsing the header.
 
    And in `config.py` (done with step 7, since `db.py` needs it):
    - [x] `extra="ignore"`: `.env` also holds `DB_USER`, `DB_PASSWORD`, `DB_NAME` for docker-compose, and pydantic-settings rejected them;
