@@ -21,7 +21,9 @@ top_k = 5
 model = "bge-reranker"
 
 [generation]
+model = "qwen3.5-9b"        # served name (llama-server -a)
 system_prompt = "prompts/strict.txt"
 temperature = 0.0
 top_p = 1.0
+top_k = 40                  # sampling: candidate tokens at each step, not the number of chunks
 max_tokens = 512

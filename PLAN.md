@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 to 13 done and tested: the ETL is complete, search and reranking work. Next: step 14 (`rag/generate.py`).
+- **Phase 1:** steps 7 to 14 done and tested: the ETL is complete; search, reranking and generation work. Next: step 15 (`rag/pipeline.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -113,7 +113,19 @@ pe` and `date`.
       - `multi_hop` Q013, Q037, Q078: the reranker scores each chunk against the whole question, so it favours one side (the notice, or the wrong part of the record); the second fact is at rank 9–11. → question decomposition (§8), larger `top_k` (§3).
       - `lay_language` Q088, Q106 (« opéré de la vésicule » / cholécystectomie): the right chunk is at rank 6. → `top_k` 10 (§3), query rewriting (§8).
       - The header chunk of every document holds the « Document fictif généré pour un cours… » disclaimer, and it sometimes ranks in the top 2 (Q013, Q078): noise worth noting in `RAPPORT.md`.
-- [ ] 14. **`rag/generate.py`:** read the prompt file, build the messages with numbered extracts (`[1] ...`, `[2] ...`, then `Question : ...`), and pass temperature, top_p, max_tokens and `extra_body` top_k from the config.
+- [x] 14. **`rag/generate.py`:** read the prompt file, build the messages with numbered extracts (`[1] ...`, `[2] ...`, then `Question : ...`), and pass temperature, top_p, max_tokens and `extra_body` top_k from the config.
+    - `generate(question, chunks, config)` → `{answer, prompt_tokens, completion_tokens, finish_reason}`; `load_system_prompt(config)` is what the runner will store with the experiment; `build_messages()` can be inspected on its own.
+    - New `[generation]` keys in both TOMLs: `model = "qwen3.5-9b"` (§8 "another LLM") and `top_k = 40` (sampling, llama-server's default made explicit).
+    - System message = the prompt file; user message = `Extraits :` + numbered chunks, best first, then `Question : ...` last.
+    - No `seed`: at temperature > 0 the 3 runs of step 23 must be able to differ. A warning is logged when an answer is cut at `max_tokens`.
+    - Tested on 8 questions (dose, table, cross_patient, multi_hop, lay_language, drug_info, 2 × out_of_corpus), `strict` vs `minimal`:
+      - `strict`: 5/5 answerable questions right, short (27–54 tokens, 0.4–1.1 s); « Je ne sais pas. » on both out_of_corpus **and** on Q013 (multi_hop), where the kaliémie chunk was not in the top 5: the right refusal given the extracts.
+      - `minimal`: same facts, but long Markdown answers (40–434 tokens, up to 5.4 s), and its refusals never say « Je ne sais pas » (« il n'est pas possible de déterminer… »).
+    - **Seen for later:**
+      - Q007: chunk [1] says ramipril 10 mg, the LLM still answers 5 mg from the later extracts: the `temporal` trap is handled by generation here.
+      - `is_refusal()` only detects the `strict` phrase: with `minimal`, refusals would be counted as answers. Step 24 needs a broader detection (or the judge) for prompts that don't impose the phrase.
+      - With `minimal`, the LLM cites the « Document fictif… » disclaimer in its reasoning (Q013): more evidence that this header chunk is noise.
+      - `strict` rule 3 (« aucune déduction ») may hurt `multi_hop`, which needs to combine two extracts (hyperkaliémie + contre-indication): check in step 24.
 - [ ] 15. **`rag/pipeline.py`:** `answer(question, config) -> (answer, chunks)`. Scripts, evaluation and the future API all call this.
 - [ ] 16. **`scripts/ask.py`:** a few lines. Use it as a smoke test.
 - [ ] 17. **`evaluation/metrics.py`:** `judge_chunk()`, hit@k, MRR, recall@k and nDCG@k (from notebook 06).
