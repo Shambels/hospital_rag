@@ -69,6 +69,20 @@ def ndcg(matches, evidence, k):
 METRICS = {"hit": hit, "mrr": mrr, "recall": recall, "ndcg": ndcg}
 
 
+def is_refusal(answer):
+    """The system prompt asks for this exact sentence when the passages do not answer the question."""
+    return "je ne sais pas" in answer.lower()
+
+
+def answer_scores(answer):
+    """Deterministic answer checks, for every question: refusal = 1 if the answer is a refusal.
+
+    Its mean is the right-refusal rate on out_of_corpus questions, and the wrong-refusal rate on all the others.
+    Only reliable with prompts that impose the sentence (strict and its variants), not with minimal.
+    """
+    return {"refusal": float(is_refusal(answer))}
+
+
 def retrieval_scores(chunks, question, top_k):
     """The scores of one question, as {metric: value} (e.g. "recall@5"). Empty for a question without evidence."""
     evidence = question["evidence"]

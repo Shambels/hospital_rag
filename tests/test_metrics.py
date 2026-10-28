@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from hospital_rag.evaluation.metrics import judge_chunk, retrieval_scores
+from hospital_rag.evaluation.metrics import answer_scores, is_refusal, judge_chunk, retrieval_scores
 
 # Two complementary facts (0 and 1); fact 0 has two interchangeable sources; one useful-only passage (grade 1)
 QUESTION = {
@@ -95,3 +95,19 @@ def test_metrics_only_up_to_top_k():
 
 def test_out_of_corpus_has_no_retrieval_score():
     assert retrieval_scores([NOISE] * 5, {"evidence": []}, top_k=5) == {}
+
+
+def test_refusal_is_the_strict_sentence_whatever_the_case():
+    assert is_refusal("Je ne sais pas.")
+    assert is_refusal("JE NE SAIS PAS")
+    assert not is_refusal("M. Bruno Martin prend 5 mg de ramipril par jour.")
+
+
+def test_refusal_misses_other_wordings():
+    # Known limit, see answer_scores(): the minimal prompt refuses without the sentence
+    assert not is_refusal("Il n'est pas possible de déterminer le groupe sanguin de Mme Marie Morel.")
+
+
+def test_answer_scores():
+    assert answer_scores("Je ne sais pas.") == {"refusal": 1.0}
+    assert answer_scores("5 mg par jour.") == {"refusal": 0.0}

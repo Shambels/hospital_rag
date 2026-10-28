@@ -21,6 +21,7 @@ top_k = 5
 model = "bge-reranker"
 
 [generation]
+enabled = true              # false: retrieval only, for experiments the deterministic metrics measure
 model = "qwen3.5-9b"        # served name (llama-server -a)
 system_prompt = "prompts/strict.txt"
 temperature = 0.0

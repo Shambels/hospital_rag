@@ -5,8 +5,9 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 to 17 done and tested: the ETL, the whole RAG, `scripts/ask.py` and the retrieval metrics (with unit tests: `uv run pytest`). Next: step 18 (`evaluation/judge.py`).
-- **Phases 2–4:** not started.
+- **Phase 1:** **done.** ETL, RAG, `ask.py`, metrics (unit tests: `uv run pytest`), LLM judge, and the two experiment passes (`run_experiment.py`, `judge_experiment.py`).
+- **Phase 2:** next. Swap the judge back to the generator, delete the temporary `search_*` experiments, run the baseline.
+- **Phases 3–4:** not started.
 
 ## Phase 0 — Fix the setup
 
@@ -154,16 +155,38 @@ pe` and `date`.
       | 10 | 0.990 | 0.838 | 0.953 | 0.842 |
 
     - **Seen for later:** recall@5 is 0.97 on one-fact questions but **0.74 on multi-fact** ones; by type `multi_hop` 0.58, `lay_language` 0.75, `cross_notice` 0.77 are the weak spots. hit@5 hides this (0.95). Going from 5 to 10 chunks gains +0.04 recall: a number for step 22.
-- [ ] 18. **`evaluation/judge.py`:** the DeepEval metrics (faithfulness, answer relevancy, contextual precision and recall, GEval correctness) plus `is_refusal()`. The judge model is served on `JUDGE_URL`.
-- [ ] 18b. **Judge in a separate pass:** the judge (about 20 GB) doesn't fit on the GPU next to the generator. So:
+- [x] 18. **`evaluation/judge.py`:** the DeepEval metrics (faithfulness, answer relevancy, contextual precision and recall, GEval correctness) plus `is_refusal()`. The judge model is served on `JUDGE_URL`.
+    - **Dependencies:** `deepeval>=4.3` (the API of notebook 06: `SingleTurnParams`, `LocalModel(base_url=...)`) requires `transformers<5.18`, as notebook 06 says; `transformers` went from 5.21 to 5.17. Checked: same chunks (1173 / 1207), tests pass.
+    - **Telemetry off:** DeepEval sends usage data to an external service by default. `judge.py` sets `DEEPEVAL_TELEMETRY_OPT_OUT=YES` before importing it; also in `.env` / `.env.example`. `.deepeval/` in `.gitignore`.
+    - `JUDGE_MODEL=qwen3.8-27b` in `.env` and `settings.judge_model`.
+    - `judge_sample(questions)` → 26 questions: the first 2 ids of each type, `out_of_corpus` excluded (13 types × 2). Deterministic: every experiment is judged on the same questions.
+    - `judge_answer(question, answer, chunks, judge_model=None)` → `{metric: (value, reason)}`: `contextual_precision`, `contextual_recall`, `faithfulness` (`penalize_ambiguous_claims`), `answer_relevancy`, `correctness` (GEval vs the expected answer). A failed metric gives `(None, "judge error: ...")`, the others are kept. Another judge's scores are named `faithfulness (gemma4-26b-a4b)` etc., so they sit next to the main judge's.
+    - New metric objects for each answer (a DeepEval metric keeps the state of its last run); `async_mode=False`, one call at a time (llama-server runs with `-np 1`).
+    - Fixed from notebook 06: a missing comma in the GEval steps glued two steps into one string.
+    - `is_refusal()` and `answer_scores(answer)` → `{"refusal": 0/1}` are in `metrics.py` (no LLM, computed for all 106 questions). Tests added (15 in total).
+    - Tested with the judge on 4 answers (3 real ones from step 14, 1 wrong on purpose): real Q007 → faithfulness 1, correctness 1; **wrong « 10 mg » → faithfulness 0, correctness 0**; Q088 → correctness 0.8 (type of surgery missing); Q013 « Je ne sais pas. » → faithfulness 1, correctness 0 (justified by the extracts, but wrong).
+    - **Cost: ~60 s per answer** (5 metrics, several judge calls each), so ~26 min per experiment for the 26 questions. Possible speed-up: start the judge with `-np 4 -c 32768` (4 parallel slots of 8k) and `async_mode=True`; to measure before relying on it.
+- [x] 18b. **Judge in a separate pass:** the judge (about 20 GB) doesn't fit on the GPU next to the generator. So:
     - `run_experiment.py` does retrieval, generation and deterministic metrics, and stores answers and chunks **with their text** (faithfulness needs it);
     - `scripts/judge_experiment.py <experiment_id>` reads the answers back from PostgreSQL and writes the judge scores, once the generator is stopped and the judge is started;
     - bonus: old experiments can be re-judged later (second judge, §8) without generating again.
-- [ ] 19. **`evaluation/runner.py`:** `run_experiment(config)` does the following:
+    - `uv run python scripts/judge_experiment.py baseline` (name = its latest finished run) or `... 12 13 --judge-model gemma4-26b-a4b`; `--force` judges again.
+    - `runner.judge_experiment(id, judge_model=None, force=False)`: judges the 26-question sample, one commit per question; **resumes** an interrupted pass (skips the questions whose 5 metrics are already stored); skips questions without an answer; refuses an experiment that isn't `done` or has no generated answers.
+    - New `db.py` functions and SQL files: `load_experiment`, `find_experiment`, `load_answers`, `load_score_keys`.
+- [x] 19. **`evaluation/runner.py`:** `run_experiment(config)` does the following:
     - inserts an `experiments` row with the full config **and the prompt text**;
     - loops over the 106 questions and stores answers and latency (generation can be skipped for retrieval-only experiments);
     - computes the deterministic scores on the 100 questions with ground truth;
     - sets the status to `done` or `failed` and records the duration.
+    - `uv run python scripts/run_experiment.py experiments/baseline.toml [other.toml ...]`.
+    - Calls `index_corpus(config)` first: the experiment can't run on a missing or incomplete index (nothing rebuilt if it is complete).
+    - New `[generation] enabled = true` in both TOMLs; `false` = retrieval only (`retrieve()` instead of `answer()`, `answer` NULL, no `refusal` score).
+    - Scores per question: `hit/mrr/recall/ndcg@k` (k ≤ `top_k`) for the 100 questions with evidence, `refusal` for all 106 when generating.
+    - Stored chunks: `document`, `chunk_index`, `search_score`, `rerank_score`, `text` (the metadata is in `hopital_documents.json`).
+    - One commit per question; any exception, Ctrl+C included, marks the experiment `failed` before stopping.
+    - Shared logging setup in `src/hospital_rag/logs.py`, used by `ingest.py`, `run_experiment.py` and `judge_experiment.py`.
+    - Tested: retrieval-only run of the baseline, 106 questions in 17 s, stored means identical to step 17 (hit@5 0.950, MRR@5 0.833, recall@5 0.913, nDCG@5 0.816); judge pass on a 2-answer test experiment (same scores as step 18, 24 questions skipped), second pass resumes and judges nothing; errors on a retrieval-only experiment and an unknown name. Test experiments deleted.
+    - Not stored yet: token counts per answer (only `latency_ms`). Worth adding if `RAPPORT.md` needs the cost in tokens.
 
 - [x] **Extra: HTML report of the metrics** (done after step 12)
     - `uv run python scripts/report.py` → `data/reports/metrics.html` (self-contained, open it in a browser; re-run after each experiment). `data/reports/` is in `.gitignore`.

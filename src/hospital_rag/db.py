@@ -61,6 +61,27 @@ def insert_scores(conn, experiment_id, scores):
     conn.commit()
 
 
+def load_experiment(conn, experiment_id):
+    """(id, name, config, status) of an experiment, or None if the id doesn't exist."""
+    return conn.execute(load_sql("load_experiment"), (experiment_id,)).fetchone()
+
+
+def find_experiment(conn, name):
+    """Id of the most recent finished run of an experiment name, or None."""
+    row = conn.execute(load_sql("find_experiment"), (name,)).fetchone()
+    return row[0] if row else None
+
+
+def load_answers(conn, experiment_id):
+    """{question_id: (chunks, answer)} of an experiment."""
+    return {qid: (chunks, answer) for qid, chunks, answer in conn.execute(load_sql("load_answers"), (experiment_id,))}
+
+
+def load_score_keys(conn, experiment_id):
+    """The (question_id, metric) pairs already scored (non-NULL): lets an interrupted judge pass resume."""
+    return set(conn.execute(load_sql("load_score_keys"), (experiment_id,)).fetchall())
+
+
 def compare_experiments(conn):
     """Mean of each metric for each experiment: rows of (name, metric, mean, n), best first."""
     return conn.execute(load_sql("compare_experiments")).fetchall()

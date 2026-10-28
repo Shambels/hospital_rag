@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     rerank_url: str = "http://localhost:8002/rerank"
     llm_url: str = "http://localhost:8000/v1"
     judge_url: str = "http://localhost:8003/v1"
+    judge_model: str = "qwen3.8-27b"  # served name (llama-server -a); §8 compares a second judge
 
     # Relative to the repo root: scripts are run from there (uv run python scripts/...)
     corpus_path: Path = Path("data/docs")

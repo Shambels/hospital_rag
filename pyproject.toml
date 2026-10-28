@@ -8,7 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-  "deepeval>=2.9.3",
+  "deepeval>=4.3",
   "docling>=2.94",
   "gguf>=0.19.0",
   "ipykernel>=7.3.0",
@@ -23,7 +23,7 @@ dependencies = [
   "qdrant-client>=1.19.1",
   "requests>=2.34.2",
   "streamlit>=1.66.1",
-  "transformers>=5.19.0",
+  "transformers<5.18",
 ]
 
 [project.scripts]
