@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -1585,6 +1585,11 @@ dependencies = [
     { name = "transformers" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "deepeval", specifier = ">=2.9.3" },
@@ -1604,6 +1609,9 @@ requires-dist = [
     { name = "streamlit", specifier = ">=1.66.1" },
     { name = "transformers", specifier = ">=5.19.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "hpack"

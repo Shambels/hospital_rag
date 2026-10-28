@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 to 16 done and tested: the ETL, the whole RAG and `scripts/ask.py` work. Next: step 17 (`evaluation/metrics.py`).
+- **Phase 1:** steps 7 to 17 done and tested: the ETL, the whole RAG, `scripts/ask.py` and the retrieval metrics (with unit tests: `uv run pytest`). Next: step 18 (`evaluation/judge.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -139,7 +139,21 @@ pe` and `date`.
     - Shows the answer, then each chunk: rank, rerank and search scores, document, chunk index, and its headings + text on one line; then the time of each stage and the tokens.
     - **The tool for the 3 failure analyses of `RAPPORT.md`:** `--id <question> --full` shows whether the failure comes from retrieval (right chunk missing), reranking (right chunk low) or generation (right chunk there, wrong answer).
     - **Seen:** for an out_of_corpus question that names a patient (Q019, no reranker), the top 5 are all that patient's header chunks: the name matches, nothing else does. More evidence that the header chunk (identity + disclaimer) attracts name-only questions.
-- [ ] 17. **`evaluation/metrics.py`:** `judge_chunk()`, hit@k, MRR, recall@k and nDCG@k (from notebook 06).
+- [x] 17. **`evaluation/metrics.py`:** `judge_chunk()`, hit@k, MRR, recall@k and nDCG@k (from notebook 06).
+    - `judge_chunk(chunk, question)` → the evidence items the chunk proves: **same document** and every snippet in the text (whitespace and Unicode normalised, case kept).
+    - `retrieval_scores(chunks, question, top_k)` → `{"hit@5": ..., "mrr@5": ..., "recall@5": ..., "ndcg@5": ...}` for every k of `K_VALUES = (3, 5, 10)` with k ≤ `top_k`; empty for `out_of_corpus`.
+    - hit and MRR: grade 2 only. Recall: share of the distinct **facts** found (interchangeable sources count once). nDCG: grades 1 and 2, linear gain, each evidence item credited once (overlapping duplicates can't push it above 1).
+    - Unit tests in `tests/test_metrics.py` (12 hand-made cases, `uv run pytest`); `pytest` added as a dev dependency.
+    - Data checked: grade 2 always has a fact number, grade 1 never; 74 one-fact questions, 26 with 2–5 facts; all 212 evidence items match the baseline chunks.
+    - Baseline retrieval (hybrid RRF, 30 candidates, bge-reranker), 100 questions:
+
+      | k | hit | MRR | recall | nDCG |
+      |---|---|---|---|---|
+      | 3 | 0.910 | 0.823 | 0.855 | 0.784 |
+      | 5 | **0.950** | **0.833** | **0.913** | **0.816** |
+      | 10 | 0.990 | 0.838 | 0.953 | 0.842 |
+
+    - **Seen for later:** recall@5 is 0.97 on one-fact questions but **0.74 on multi-fact** ones; by type `multi_hop` 0.58, `lay_language` 0.75, `cross_notice` 0.77 are the weak spots. hit@5 hides this (0.95). Going from 5 to 10 chunks gains +0.04 recall: a number for step 22.
 - [ ] 18. **`evaluation/judge.py`:** the DeepEval metrics (faithfulness, answer relevancy, contextual precision and recall, GEval correctness) plus `is_refusal()`. The judge model is served on `JUDGE_URL`.
 - [ ] 18b. **Judge in a separate pass:** the judge (about 20 GB) doesn't fit on the GPU next to the generator. So:
     - `run_experiment.py` does retrieval, generation and deterministic metrics, and stores answers and chunks **with their text** (faithfulness needs it);
