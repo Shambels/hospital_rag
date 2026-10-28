@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 to 14 done and tested: the ETL is complete; search, reranking and generation work. Next: step 15 (`rag/pipeline.py`).
+- **Phase 1:** steps 7 to 15 done and tested: the ETL and the whole RAG (`rag/pipeline.py`) work. Next: step 16 (`scripts/ask.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -126,7 +126,13 @@ pe` and `date`.
       - `is_refusal()` only detects the `strict` phrase: with `minimal`, refusals would be counted as answers. Step 24 needs a broader detection (or the judge) for prompts that don't impose the phrase.
       - With `minimal`, the LLM cites the « Document fictif… » disclaimer in its reasoning (Q013): more evidence that this header chunk is noise.
       - `strict` rule 3 (« aucune déduction ») may hurt `multi_hop`, which needs to combine two extracts (hyperkaliémie + contre-indication): check in step 24.
-- [ ] 15. **`rag/pipeline.py`:** `answer(question, config) -> (answer, chunks)`. Scripts, evaluation and the future API all call this.
+- [x] 15. **`rag/pipeline.py`:** `answer(question, config) -> (answer, chunks)`. Scripts, evaluation and the future API all call this.
+    - `retrieve(question, config)` → `{chunks, timings}`: search + rerank only, for the retrieval-only experiments.
+    - `answer(question, config)` → `{answer, chunks, latency_ms, timings, prompt_tokens, completion_tokens, finish_reason}`; `timings` has `search_ms`, `rerank_ms`, `generate_ms`.
+    - A dict, not a tuple: the runner and the API pick the fields they need, and adding one (e.g. the §6 filter used) breaks no caller.
+    - Timed with `time.perf_counter()` (monotonic, made for durations).
+    - Tested on Q007: right answer (5 mg); 94 + 110 + 1005 ms, generation is ~83 % of the latency. RRF search scores ≈ 0.03 (= 1/61 + 1/62), rerank scores 0.76–0.98.
+    - Step 26 (filters) will plug in here, between the question and `search()`.
 - [ ] 16. **`scripts/ask.py`:** a few lines. Use it as a smoke test.
 - [ ] 17. **`evaluation/metrics.py`:** `judge_chunk()`, hit@k, MRR, recall@k and nDCG@k (from notebook 06).
 - [ ] 18. **`evaluation/judge.py`:** the DeepEval metrics (faithfulness, answer relevancy, contextual precision and recall, GEval correctness) plus `is_refusal()`. The judge model is served on `JUDGE_URL`.
