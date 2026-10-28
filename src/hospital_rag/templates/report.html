@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG experiments</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --surface: #ffffff; --text: #1d1d1b; --muted: #6b6b66; --border: #e2e1dc;
+    --accent: #2f6fdf; --pos: #1f8a4c; --neg: #c2372f; --best: #fff4cc; --bar: #d7e3fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161614; --surface: #1f1f1c; --text: #ecebe6; --muted: #9c9b94; --border: #34332f;
+      --accent: #7aa7ff; --pos: #4cc27f; --neg: #ff7a70; --best: #4a3f14; --bar: #27406e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161614; --surface: #1f1f1c; --text: #ecebe6; --muted: #9c9b94; --border: #34332f;
+    --accent: #7aa7ff; --pos: #4cc27f; --neg: #ff7a70; --best: #4a3f14; --bar: #27406e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 4px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12px; }
+  section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 12px; }
+  label { color: var(--muted); font-size: 13px; }
+  select {
+    font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 8px; margin-left: 4px;
+  }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover, th.sorted { color: var(--text); }
+  td.left, th.left { text-align: left; }
+  td.wrap { white-space: normal; min-width: 220px; }
+  tr.baseline td:first-child { font-weight: 600; }
+  .cell { position: relative; display: inline-block; min-width: 64px; }
+  .cell .bar { position: absolute; left: 0; bottom: -2px; height: 3px; background: var(--accent); border-radius: 2px; opacity: .55; }
+  td.best { background: var(--best); }
+  .delta { font-size: 11px; margin-left: 4px; }
+  .pos { color: var(--pos); } .neg { color: var(--neg); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--bg);
+    border: 1px solid var(--border); white-space: nowrap;
+  }
+  .heat { min-width: 56px; }
+  .deltabar { display: inline-block; height: 8px; border-radius: 2px; vertical-align: middle; }
+  details { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  .empty { padding: 32px; text-align: center; color: var(--muted); }
+  code { font-size: 12px; background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>RAG experiments</h1>
+    <span class="muted small" id="meta"></span>
+  </header>
+  <div id="app"></div>
+</main>
+
+<script>
+const DATA = /*__REPORT_DATA__*/null;
+if (DATA === null) {  // the template itself, opened without data
+  document.getElementById("app").innerHTML = `<section class="empty">This is the report <b>template</b>: it has no data.<br>
+    Generate the report with <code>uv run python scripts/report.py</code>, then open <code>data/reports/metrics.html</code>.</section>`;
+  throw new Error("report template opened without data");
+}
+
+// ---------- data ----------
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const mean = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+const sd = xs => { if (xs.length < 2) return 0; const m = mean(xs); return Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1)); };
+const fmt = v => v == null ? "–" : v.toFixed(3);
+
+// Deterministic retrieval metrics first, in this order; judge metrics after, alphabetically
+const FAMILY = ["hit", "mrr", "recall", "ndcg"];
+function metricRank(m) {
+  const i = FAMILY.findIndex(f => m.startsWith(f));
+  const k = parseInt((m.split("@")[1] || "0"), 10);
+  return [i < 0 ? FAMILY.length : i, k, m];
+}
+const byMetric = (a, b) => { const ra = metricRank(a), rb = metricRank(b); return ra[0] - rb[0] || ra[1] - rb[1] || ra[2].localeCompare(rb[2]); };
+
+const experiments = DATA.experiments;
+const done = experiments.filter(e => e.status === "done");
+const scoresByExp = new Map();          // experiment id -> metric -> [{qid, type, value}]
+const metricsSet = new Set();
+for (const [eid, qid, type, metric, value] of DATA.scores) {
+  if (!scoresByExp.has(eid)) scoresByExp.set(eid, new Map());
+  const m = scoresByExp.get(eid);
+  if (!m.has(metric)) m.set(metric, []);
+  m.get(metric).push({qid, type, value});
+  metricsSet.add(metric);
+}
+const METRICS = [...metricsSet].sort(byMetric);
+
+// Runs with the same name are repeats of one configuration (e.g. 3 runs at temperature 0.7)
+const groups = new Map();
+for (const e of done) { if (!groups.has(e.name)) groups.set(e.name, []); groups.get(e.name).push(e); }
+const NAMES = [...groups.keys()];
+const BASELINE = groups.has("baseline") ? "baseline" : NAMES[0];
+
+function runValues(eid, metric, type) {
+  const rows = scoresByExp.get(eid)?.get(metric) || [];
+  return rows.filter(r => r.value != null && (!type || r.type === type)).map(r => r.value);
+}
+function groupStat(name, metric, type) {
+  const runMeans = (groups.get(name) || []).map(e => mean(runValues(e.id, metric, type))).filter(v => v != null);
+  return {mean: mean(runMeans), sd: sd(runMeans), runs: runMeans.length};
+}
+function perQuestion(name, metric) {   // question id -> mean over the runs of the group
+  const acc = new Map();
+  for (const e of groups.get(name) || []) for (const r of scoresByExp.get(e.id)?.get(metric) || []) {
+    if (r.value == null) continue;
+    if (!acc.has(r.qid)) acc.set(r.qid, []);
+    acc.get(r.qid).push(r.value);
+  }
+  return new Map([...acc].map(([q, vs]) => [q, mean(vs)]));
+}
+const TYPES = [...new Set(DATA.scores.map(r => r[2]))];
+
+// Configuration differences with the baseline: "what this experiment changes"
+function flatten(obj, prefix = "", out = {}) {
+  for (const [k, v] of Object.entries(obj || {})) {
+    const key = prefix ? `${prefix}.${k}` : k;
+    if (v && typeof v === "object" && !Array.isArray(v)) flatten(v, key, out); else out[key] = v;
+  }
+  return out;
+}
+function configDiff(name) {
+  if (name === BASELINE) return [];
+  const last = g => { const runs = groups.get(g) || []; return runs[runs.length - 1]?.config; };
+  const a = flatten(last(BASELINE)), b = flatten(last(name));
+  const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter(k => k !== "name");
+  return keys.filter(k => JSON.stringify(a[k]) !== JSON.stringify(b[k])).map(k => {
+    const v = b[k];
+    const shown = v === undefined ? "(removed)" : typeof v === "string" && v.length > 40 ? "(changed)" : JSON.stringify(v);
+    return `${k} = ${shown}`;
+  });
+}
+const durationOf = name => mean((groups.get(name) || []).map(e => e.duration_s).filter(v => v != null));
+
+// ---------- rendering ----------
+function deltaHtml(d) {
+  if (d == null || Math.abs(d) < 0.0005) return "";
+  return `<span class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d.toFixed(3)}</span>`;
+}
+function heatStyle(v) {
+  if (v == null) return "";
+  return `style="background: color-mix(in srgb, var(--accent) ${Math.round(v * 45)}%, transparent)"`;
+}
+function options(values, selected, label = v => v) {
+  return values.map(v => `<option value="${esc(v)}" ${v === selected ? "selected" : ""}>${esc(label(v))}</option>`).join("");
+}
+
+const state = {sort: METRICS[0], typeMetric: METRICS[0], a: BASELINE, b: NAMES.find(n => n !== BASELINE) || BASELINE, cmpMetric: METRICS[0]};
+
+function leaderboard() {
+  const base = Object.fromEntries(METRICS.map(m => [m, groupStat(BASELINE, m).mean]));
+  const stats = NAMES.map(n => ({name: n, s: Object.fromEntries(METRICS.map(m => [m, groupStat(n, m)]))}));
+  const best = Object.fromEntries(METRICS.map(m => [m, Math.max(...stats.map(r => r.s[m].mean ?? -Infinity))]));
+  const sorted = state.sort === "name" ? [...stats].sort((x, y) => x.name.localeCompare(y.name))
+    : [...stats].sort((x, y) => (y.s[state.sort].mean ?? -1) - (x.s[state.sort].mean ?? -1));
+  const head = `<tr>
+      <th class="left sortable ${state.sort === "name" ? "sorted" : ""}" data-sort="name">Experiment</th>
+      <th class="left">Changes vs ${esc(BASELINE)}</th><th>Runs</th>
+      ${METRICS.map(m => `<th class="sortable ${state.sort === m ? "sorted" : ""}" data-sort="${esc(m)}">${esc(m)}${state.sort === m ? " ▾" : ""}</th>`).join("")}
+      <th>Duration</th></tr>`;
+  const rows = sorted.map(({name, s}) => {
+    const runs = Math.max(...METRICS.map(m => s[m].runs));
+    const diff = configDiff(name);
+    const dur = durationOf(name);
+    return `<tr class="${name === BASELINE ? "baseline" : ""}">
+      <td class="left">${esc(name)}</td>
+      <td class="left wrap"><div class="chips">${name === BASELINE ? '<span class="muted small">reference</span>'
+        : diff.map(d => `<span class="chip">${esc(d)}</span>`).join("") || '<span class="muted small">same config</span>'}</div></td>
+      <td>${runs}</td>
+      ${METRICS.map(m => {
+        const st = s[m];
+        if (st.mean == null) return "<td>–</td>";
+        const spread = st.runs > 1 ? `<span class="muted small"> ±${st.sd.toFixed(3)}</span>` : "";
+        return `<td class="${st.mean === best[m] && NAMES.length > 1 ? "best" : ""}" title="${st.runs} run(s)">
+          <span class="cell">${fmt(st.mean)}${spread}<span class="bar" style="width:${Math.max(0, Math.min(1, st.mean)) * 100}%"></span></span>
+          ${name === BASELINE ? "" : deltaHtml(st.mean - base[m])}</td>`;
+      }).join("")}
+      <td class="muted">${dur == null ? "–" : dur.toFixed(0) + " s"}</td></tr>`;
+  }).join("");
+  return `<section>
+    <h2>Leaderboard</h2>
+    <p class="hint">Mean over the questions, then over the runs of an experiment (± = standard deviation between runs).
+      Small numbers: difference with <b>${esc(BASELINE)}</b>. Highlighted: best of the column. Click a column to sort.</p>
+    <div class="scroll"><table id="board">${head}${rows}</table></div></section>`;
+}
+
+function byType() {
+  const m = state.typeMetric;
+  const order = [...TYPES].sort((x, y) => (groupStat(BASELINE, m, x).mean ?? 2) - (groupStat(BASELINE, m, y).mean ?? 2));
+  const counts = Object.fromEntries(order.map(t => [t, new Set(DATA.scores.filter(r => r[2] === t && r[3] === m).map(r => r[1])).size]));
+  const head = `<tr><th class="left">Experiment</th>${order.map(t => `<th title="${counts[t]} questions">${esc(t)}<br><span class="small">n=${counts[t]}</span></th>`).join("")}</tr>`;
+  const rows = NAMES.map(n => `<tr class="${n === BASELINE ? "baseline" : ""}"><td class="left">${esc(n)}</td>${order.map(t => {
+    const v = groupStat(n, m, t).mean;
+    return `<td class="heat" ${heatStyle(v)}>${fmt(v)}</td>`;
+  }).join("")}</tr>`).join("");
+  return `<section>
+    <h2>By question type</h2>
+    <p class="hint">Columns sorted from the hardest to the easiest type for <b>${esc(BASELINE)}</b>. Watch the types each optimisation targets.</p>
+    <div class="controls"><label>Metric <select id="typeMetric">${options(METRICS, m)}</select></label></div>
+    <div class="scroll"><table>${head}${rows}</table></div></section>`;
+}
+
+function compare() {
+  const {a, b, cmpMetric: m} = state;
+  const typeRows = TYPES.map(t => ({t, va: groupStat(a, m, t).mean, vb: groupStat(b, m, t).mean}))
+    .map(r => ({...r, d: r.va != null && r.vb != null ? r.vb - r.va : null}))
+    .sort((x, y) => (y.d ?? -9) - (x.d ?? -9));
+  const maxAbs = Math.max(0.001, ...typeRows.map(r => Math.abs(r.d ?? 0)));
+  const typeTable = `<table><tr><th class="left">Type</th><th>${esc(a)}</th><th>${esc(b)}</th><th>Δ</th><th class="left"></th></tr>${typeRows.map(r => `
+    <tr><td class="left">${esc(r.t)}</td><td>${fmt(r.va)}</td><td>${fmt(r.vb)}</td><td>${deltaHtml(r.d) || '<span class="muted small">=</span>'}</td>
+    <td class="left">${r.d ? `<span class="deltabar" style="width:${Math.abs(r.d) / maxAbs * 120}px;background:var(${r.d > 0 ? "--pos" : "--neg"})"></span>` : ""}</td></tr>`).join("")}</table>`;
+
+  const qa = perQuestion(a, m), qb = perQuestion(b, m);
+  const changed = [...qa.keys()].filter(q => qb.has(q)).map(q => ({q, va: qa.get(q), vb: qb.get(q), d: qb.get(q) - qa.get(q)}))
+    .filter(r => Math.abs(r.d) >= 0.0005);
+  const list = (rows, title) => `<details ${rows.length ? "open" : ""}><summary>${title} (${rows.length})</summary>
+    ${rows.length ? `<div class="scroll"><table><tr><th class="left">Question</th><th class="left">Type</th><th class="left">Text</th><th>${esc(a)}</th><th>${esc(b)}</th></tr>
+    ${rows.map(r => { const info = DATA.questions[r.q] || {};
+      return `<tr><td class="left">${esc(r.q)}</td><td class="left">${esc(info.type)}</td>
+        <td class="left wrap" title="Expected: ${esc(info.answer)}">${esc(info.question)}</td><td>${fmt(r.va)}</td><td>${fmt(r.vb)}</td></tr>`; }).join("")}</table></div>` : '<p class="muted small">None.</p>'}</details>`;
+  const improved = changed.filter(r => r.d > 0).sort((x, y) => y.d - x.d);
+  const degraded = changed.filter(r => r.d < 0).sort((x, y) => x.d - y.d);
+  return `<section>
+    <h2>Compare two experiments</h2>
+    <p class="hint">Which question types and which questions change when going from A to B. Hover a question to see the expected answer.</p>
+    <div class="controls">
+      <label>A <select id="cmpA">${options(NAMES, a)}</select></label>
+      <label>B <select id="cmpB">${options(NAMES, b)}</select></label>
+      <label>Metric <select id="cmpMetric">${options(METRICS, m)}</select></label>
+      <span class="muted small">overall: ${fmt(groupStat(a, m).mean)} → ${fmt(groupStat(b, m).mean)} ${deltaHtml((groupStat(b, m).mean ?? 0) - (groupStat(a, m).mean ?? 0))}</span>
+    </div>
+    <div class="scroll">${typeTable}</div>
+    ${list(improved, `Improved in ${esc(b)}`)}
+    ${list(degraded, `Degraded in ${esc(b)}`)}</section>`;
+}
+
+function otherRuns() {
+  const others = experiments.filter(e => e.status !== "done");
+  if (!others.length) return "";
+  return `<section><h2>Runs not finished</h2>
+    <p class="hint">Not counted above. <code>running</code> long after its start usually means the run crashed.</p>
+    <div class="scroll"><table><tr><th class="left">Id</th><th class="left">Name</th><th class="left">Status</th><th class="left">Started</th></tr>
+    ${others.map(e => `<tr><td class="left">${e.id}</td><td class="left">${esc(e.name)}</td><td class="left ${e.status === "failed" ? "neg" : ""}">${esc(e.status)}</td><td class="left">${esc(e.started_at)}</td></tr>`).join("")}
+    </table></div></section>`;
+}
+
+function render() {
+  const app = document.getElementById("app");
+  document.getElementById("meta").textContent =
+    `${done.length} finished runs · ${NAMES.length} experiments · ${METRICS.length} metrics · generated ${DATA.generated_at.replace("T", " ")}`;
+  if (!done.length || !METRICS.length) {
+    app.innerHTML = `<section class="empty">No finished experiment with scores yet.<br>Run <code>uv run python scripts/run_experiment.py experiments/baseline.toml</code>, then <code>uv run python scripts/report.py</code>.</section>${otherRuns()}`;
+    return;
+  }
+  app.innerHTML = leaderboard() + byType() + compare() + otherRuns();
+  app.querySelectorAll("#board th.sortable").forEach(th => th.onclick = () => { state.sort = th.dataset.sort; render(); });
+  const bind = (id, key) => { const el = document.getElementById(id); if (el) el.onchange = () => { state[key] = el.value; render(); }; };
+  bind("typeMetric", "typeMetric"); bind("cmpA", "a"); bind("cmpB", "b"); bind("cmpMetric", "cmpMetric");
+}
+render();
+</script>
+</body>
+</html>

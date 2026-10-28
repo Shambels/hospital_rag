@@ -64,3 +64,13 @@ def insert_scores(conn, experiment_id, scores):
 def compare_experiments(conn):
     """Mean of each metric for each experiment: rows of (name, metric, mean, n), best first."""
     return conn.execute(load_sql("compare_experiments")).fetchall()
+
+
+def list_experiments(conn):
+    """Every experiment, oldest first: rows of (id, name, config, started_at, duration_s, status)."""
+    return conn.execute(load_sql("report_experiments")).fetchall()
+
+
+def list_scores(conn):
+    """Every score: rows of (experiment_id, question_id, question_type, metric, value)."""
+    return conn.execute(load_sql("report_scores")).fetchall()

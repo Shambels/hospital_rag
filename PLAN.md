@@ -112,6 +112,13 @@ pe` and `date`.
     - computes the deterministic scores on the 100 questions with ground truth;
     - sets the status to `done` or `failed` and records the duration.
 
+- [x] **Extra: HTML report of the metrics** (done after step 12)
+    - `uv run python scripts/report.py` → `data/reports/metrics.html` (self-contained, open it in a browser; re-run after each experiment). `data/reports/` is in `.gitignore`.
+    - `evaluation/report.py` reads every experiment and score (`sql/report_*.sql`); the page (`templates/report.html`) computes the means itself.
+    - Sections: **leaderboard** (mean per metric, ± between runs of the same name, difference with `baseline`, the config keys that differ from it, best per column, sortable), **by question type** (heatmap, hardest types first), **compare two experiments** (per type, then the questions improved and degraded), **runs not finished**.
+    - Runs with the same `name` are grouped as repeats (the 3 runs per temperature of step 23). The reference is the experiment named `baseline`, or the first one until it exists.
+    - **To delete before step 20:** 4 temporary experiments from the step 12 test (`search_hybrid_rrf`, `search_dense`, `search_sparse`, `search_hybrid_dbsf`; retrieval only, quick relevance check): `DELETE FROM experiments WHERE name LIKE 'search\_%';` (cascade removes their scores).
+
 ## Phase 2 — The baseline
 
 - [ ] 20. Run `uv run python scripts/run_experiment.py experiments/baseline.toml`, then the judge pass. The numbers should be close to the chapter 04 ones. If they aren't, there's a bug in the refactor: find it before going further.

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     documents_path: Path = Path("data/hopital_documents.json")
     eval_path: Path = Path("data/hopital_eval.json")
     conversions_path: Path = Path("data/conversions")
+    reports_path: Path = Path("data/reports")
     models_path: Path  # holds embedder/{name}, reranker/{name} and docling/
 
     @property
