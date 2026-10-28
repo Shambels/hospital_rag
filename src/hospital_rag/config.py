@@ -21,7 +21,11 @@ class Settings(BaseSettings):
     documents_path: Path = Path("data/hopital_documents.json")
     eval_path: Path = Path("data/hopital_eval.json")
     conversions_path: Path = Path("data/conversions")
-    docling_models_path: Path
+    models_path: Path  # holds embedder/{name}, reranker/{name} and docling/
+
+    @property
+    def docling_models_path(self):
+        return self.models_path / "docling"
 
 
 class OcrSettings(BaseSettings):
