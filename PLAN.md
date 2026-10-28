@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 to 10 (`db.py`, `etl/convert.py`, `etl/chunk.py`, `etl/index.py`) done and tested; `config.py` fixed. Next: step 11 (`scripts/ingest.py`).
+- **Phase 1:** steps 7 to 11 (`db.py`, the `etl/` modules, `scripts/ingest.py`) done and tested: the ETL is complete. Next: step 12 (`rag/search.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -75,7 +75,11 @@ Bottom-up. Test each module before starting the next.
     - Tested: 1173 chunks indexed in 7.2 s; second run skips; dense size 1024; Q007 in hybrid search returns the 3 evidence documents in the top 3.
     - **Seen for later:** the top chunk for Q007 says « Ramipril 10 mg » (consultation of 13/04), but the expected answer is 5 mg (the dose was changed). The right documents are found; choosing the most recent one is the `temporal` trap, for the reranker and the prompt.
 pe` and `date`.
-- [ ] 11. **`scripts/ingest.py`:** read the TOML and call the indexing function. Run it for the baseline.
+- [x] 11. **`scripts/ingest.py`:** read the TOML and call the indexing function. Run it for the baseline.
+    - `uv run python scripts/ingest.py experiments/baseline.toml [other.toml ...] [--force]`: converts the missing documents, stops if one fails, then indexes each config (skipped if complete).
+    - `--force` rebuilds the collections; it never re-runs Docling (use `convert_documents(force=True)` for that).
+    - Logs: `httpx`/`httpx2` and `docling` at WARNING, `transformers` at ERROR (harmless "Token indices sequence length" warning), Qdrant's "insecure connection" warning ignored (local, plain http).
+    - Done: `hopital__bge-m3__512_0` (1173 chunks) and `hopital__bge-m3__256_32` (1207 chunks, 5.7 s).
 - [ ] 12. **`rag/search.py`:** dense, sparse, and hybrid search with RRF or DBSF and an optional filter (from notebook 05).
 - [ ] 13. **`rag/rerank.py`:** call `RERANK_URL` and keep the top_k results.
 - [ ] 14. **`rag/generate.py`:** read the prompt file, build the messages with numbered extracts (`[1] ...`, `[2] ...`, then `Question : ...`), and pass temperature, top_p, max_tokens and `extra_body` top_k from the config.
