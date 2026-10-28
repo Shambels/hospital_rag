@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 to 15 done and tested: the ETL and the whole RAG (`rag/pipeline.py`) work. Next: step 16 (`scripts/ask.py`).
+- **Phase 1:** steps 7 to 16 done and tested: the ETL, the whole RAG and `scripts/ask.py` work. Next: step 17 (`evaluation/metrics.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -133,7 +133,12 @@ pe` and `date`.
     - Timed with `time.perf_counter()` (monotonic, made for durations).
     - Tested on Q007: right answer (5 mg); 94 + 110 + 1005 ms, generation is ~83 % of the latency. RRF search scores ≈ 0.03 (= 1/61 + 1/62), rerank scores 0.76–0.98.
     - Step 26 (filters) will plug in here, between the question and `search()`.
-- [ ] 16. **`scripts/ask.py`:** a few lines. Use it as a smoke test.
+- [x] 16. **`scripts/ask.py`:** a few lines. Use it as a smoke test.
+    - `uv run python scripts/ask.py "question"` or `--id Q013` (question from the eval set, shows the expected answer too).
+    - `--config` (default `experiments/baseline.toml`), `--full` (whole chunk text), `--retrieve-only` (no generation).
+    - Shows the answer, then each chunk: rank, rerank and search scores, document, chunk index, and its headings + text on one line; then the time of each stage and the tokens.
+    - **The tool for the 3 failure analyses of `RAPPORT.md`:** `--id <question> --full` shows whether the failure comes from retrieval (right chunk missing), reranking (right chunk low) or generation (right chunk there, wrong answer).
+    - **Seen:** for an out_of_corpus question that names a patient (Q019, no reranker), the top 5 are all that patient's header chunks: the name matches, nothing else does. More evidence that the header chunk (identity + disclaimer) attracts name-only questions.
 - [ ] 17. **`evaluation/metrics.py`:** `judge_chunk()`, hit@k, MRR, recall@k and nDCG@k (from notebook 06).
 - [ ] 18. **`evaluation/judge.py`:** the DeepEval metrics (faithfulness, answer relevancy, contextual precision and recall, GEval correctness) plus `is_refusal()`. The judge model is served on `JUDGE_URL`.
 - [ ] 18b. **Judge in a separate pass:** the judge (about 20 GB) doesn't fit on the GPU next to the generator. So:
