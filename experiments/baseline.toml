@@ -1,4 +1,4 @@
-# experiments/baseline.toml — the chapter 04 configuration, every experiment is compared to it
+# experiments/baseline.toml — the reference configuration: every experiment is compared to it
 name = "baseline"
 
 [chunking]

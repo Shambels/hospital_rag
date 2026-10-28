@@ -6,8 +6,9 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 
 - **Phase 0:** done.
 - **Phase 1:** **done.** ETL, RAG, `ask.py`, metrics (unit tests: `uv run pytest`), LLM judge, and the two experiment passes (`run_experiment.py`, `judge_experiment.py`).
-- **Phase 2:** next. Swap the judge back to the generator, delete the temporary `search_*` experiments, run the baseline.
-- **Phases 3–4:** not started.
+- **Phase 2:** done. Baseline = experiment 10 (run + judge), the reference of every experiment.
+- **Phase 3:** step 21 (chunking) done: baseline chunking kept. Next: step 22 (retrieval parameters).
+- **Phase 4:** not started.
 
 ## Phase 0 — Fix the setup
 
@@ -197,11 +198,45 @@ pe` and `date`.
 
 ## Phase 2 — The baseline
 
-- [ ] 20. Run `uv run python scripts/run_experiment.py experiments/baseline.toml`, then the judge pass. The numbers should be close to the chapter 04 ones. If they aren't, there's a bug in the refactor: find it before going further.
+- [x] 20. Run `uv run python scripts/run_experiment.py experiments/baseline.toml`, then the judge pass.
+    - [x] Temporary `search_*` experiments deleted.
+    - [x] **Run pass** (experiment 10, 102 s, no warning, no answer cut at `max_tokens`):
+      - retrieval: hit@5 0.950, MRR@5 0.833, recall@5 0.913, nDCG@5 0.816 (same as step 17);
+      - refusals: **6/6 out_of_corpus refused**; **7/100 answerable questions wrongly refused**: 6 `multi_hop` (Q012, Q013, Q071, Q072, Q078, Q089, recall@5 0 or 0.5: one fact missing) and 1 `buried` (Q017, recall@5 = 1);
+      - latency: median 944 ms, p90 1179 ms, max 1982 ms; answers: median 110 characters.
+    - **Seen:** Q017 is a generation failure caused by `strict.txt` rule 2 (« ou seulement une partie de la réponse » → refuse): the model says the appendix « était perforé » and still ends with « Je ne sais pas. ». The 6 `multi_hop` refusals are the same rule applied to a partial retrieval. Candidate for step 24: a prompt that answers the part it can and says what is missing.
+    - [x] **Judge pass** (1644 s = 27 min, 0 judge failures), 26-question sample:
+
+      | contextual_precision | contextual_recall | faithfulness | answer_relevancy | correctness |
+      |---|---|---|---|---|
+      | 0.876 | 0.942 | 0.881 | 0.910 | 0.850 |
+
+      - correctness by type: `multi_hop` **0.00** (its 2 sample questions, Q012 and Q013, are among the wrong refusals), `buried` 0.65 (Q017), `abbreviation` 0.80, 9 types at 0.90–1.00.
+      - The 3 answers under 0.5 all have faithfulness ≥ 0.67: the model doesn't invent, it refuses or under-answers. That points at retrieval (missing fact) and at `strict.txt` rule 2, not at hallucination.
+      - **Read with care:** 2 questions per type, so one question moves a type's mean by 0.5 and the overall mean by ~0.04. Small differences between experiments on judge metrics are noise.
 
 ## Phase 3 — Experiments, one change at a time, one TOML each
 
-- [ ] 21. **§2 Chunking:** 128, 256 and 512 tokens × overlap 0 and about 15%. Needs reindexing. Watch `split`, `buried` and `table`; note the number of chunks.
+- [x] 21. **§2 Chunking:** 128, 256 and 512 tokens × overlap 0 and about 15%. Needs reindexing. Watch `split`, `buried` and `table`; note the number of chunks.
+    - 5 TOMLs = `baseline.toml` with only `[chunking]` changed and `[generation] enabled = false` (checked with `diff`): `chunks_256_overlap_0`, `chunks_256_overlap_32`, `chunks_128_overlap_0`, `chunks_128_overlap_16`, `chunks_128_overlap_32`. Experiments 11–15, ~18 s each; indexes 5–8 s each.
+
+      | Experiment | Chunks | hit@5 | MRR@5 | recall@3 | recall@5 | nDCG@5 |
+      |---|---|---|---|---|---|---|
+      | **baseline (512/0)** | 1173 | 0.950 | **0.833** | **0.856** | 0.913 | **0.816** |
+      | 256/0 | 1189 | 0.950 | 0.835 | 0.856 | 0.913 | 0.817 |
+      | 256/32 | 1207 | **0.970** | 0.805 | 0.847 | **0.926** | 0.783 |
+      | 128/0 | 1456 | 0.900 | 0.783 | 0.837 | 0.871 | 0.805 |
+      | 128/16 | 1608 | 0.900 | 0.783 | 0.843 | 0.872 | 0.794 |
+      | 128/32 | 1717 | 0.960 | 0.802 | 0.810 | 0.914 | 0.795 |
+
+      recall@5 by type: `split` 1.00 everywhere except **128/0 and 128/16: 0.50** (Q009, Q016, Q023, Q059 lost, the 4 misses predicted by the step 9 coverage test), **recovered at 128/32**; `buried` and `table` 1.00 everywhere; `lay_language` 0.75 → 1.00 with overlap (256/32, 128/16); `cross_notice` 0.77 → 0.68–0.71 with overlap.
+    - **Conclusions:**
+      - 256/0 = baseline (same results, 16 more chunks): HybridChunker follows the sections, the size limit doesn't bite above 256 (as measured in step 9).
+      - 128 tokens breaks the `split` questions; overlap 16 doesn't repair them, **overlap 32 does**: overlap works when it is large enough to carry the cut sentence.
+      - Overlap reshuffles more than it improves: 256/32 gains 4 questions and loses 4 (recall@5 +0.013, but MRR −0.028, nDCG −0.033). It helps `lay_language` (the previous chunk's end brings context) and hurts `cross_notice` (list questions need many distinct chunks; overlapping ones repeat each other).
+      - Smaller chunks cost more for nothing: 128/32 has 46 % more chunks than the baseline for the same recall and a lower MRR/nDCG.
+      - **Kept: the baseline chunking (512/0).** No configuration beats it on more than noise (4 questions up, 4 down out of 100), so none goes to the judge (the exercise judges only "les configurations retenues").
+    - Note: `answers.latency_ms` of the baseline includes generation (~960 ms); the retrieval-only runs are ~160 ms. Per-stage timings are not stored, only the total.
 - [ ] 22. **§3 Retrieval parameters:** top_k 3, 5, 10; candidates 10, 30, 50; RRF `k` vs DBSF. No reindexing.
 - [ ] 23. **§3 Generation parameters:** temperature 0, 0.3, 0.7, 1, plus top_p and top_k. Judge only, **3 runs each**; look at the spread, not just the mean, and watch the refusals.
 - [ ] 24. **§4 Prompts:** `minimal`, `strict`, `citations`, `patient` (each variant = `strict.txt` + one rule), at temperature 0.
