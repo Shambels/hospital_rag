@@ -11,7 +11,9 @@ model = "bge-m3"
 query_instruction = ""
 
 [search]
-method = "hybrid"
+method = "hybrid"          # dense, sparse or hybrid
+fusion = "rrf"             # hybrid only: rrf or dbsf
+rrf_k = 60                 # rrf only
 candidates = 30
 top_k = 5
 

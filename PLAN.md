@@ -5,7 +5,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 ## Status (2026-10-28)
 
 - **Phase 0:** done.
-- **Phase 1:** steps 7 to 11 (`db.py`, the `etl/` modules, `scripts/ingest.py`) done and tested: the ETL is complete. Next: step 12 (`rag/search.py`).
+- **Phase 1:** steps 7 to 12 done and tested: the ETL is complete, `rag/search.py` works. Next: step 13 (`rag/rerank.py`).
 - **Phases 2–4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -80,7 +80,22 @@ pe` and `date`.
     - `--force` rebuilds the collections; it never re-runs Docling (use `convert_documents(force=True)` for that).
     - Logs: `httpx`/`httpx2` and `docling` at WARNING, `transformers` at ERROR (harmless "Token indices sequence length" warning), Qdrant's "insecure connection" warning ignored (local, plain http).
     - Done: `hopital__bge-m3__512_0` (1173 chunks) and `hopital__bge-m3__256_32` (1207 chunks, 5.7 s).
-- [ ] 12. **`rag/search.py`:** dense, sparse, and hybrid search with RRF or DBSF and an optional filter (from notebook 05).
+- [x] 12. **`rag/search.py`:** dense, sparse, and hybrid search with RRF or DBSF and an optional filter (from notebook 05).
+    - `search(question, config, query_filter=None)` → the `[search] candidates` best chunks (payload + `search_score`); `query_text()` adds the §5 instruction.
+    - New `[search]` keys in both TOMLs: `fusion = "rrf"` (or `"dbsf"`) and `rrf_k = 60`, so every stored config says which fusion it used.
+    - The instruction goes before the question for the **dense** vector only; BM25 gets the bare question.
+    - The filter is passed as `query_filter`: Qdrant also applies it to the prefetches.
+    - Tested on the 100 questions with ground truth, baseline index, no reranker (quick relevance check: grade-2 evidence document + all its snippets):
+
+      | Method | hit@5 | hit@30 | ms / question |
+      |---|---|---|---|
+      | dense | 0.87 | 1.00 | 31 |
+      | sparse (BM25) | 0.79 | 0.99 | 6 |
+      | hybrid RRF k=60 | 0.85 | 1.00 | 60 |
+      | hybrid DBSF | 0.89 | 1.00 | 44 |
+
+    - **Seen for later:** hit@30 = 1.00, so a relevant chunk is always among the candidates: everything the reranker can gain is there. `lay_language` is the weakest type (2/8 at hit@5), as expected for vocabulary mismatch. RRF below dense alone, DBSF above: a 2–4 question difference, to confirm with the real metrics in step 22.
+    - Patient filter checked: Q007 with `patient_ipp = 4100002` → only that patient's chunks.
 - [ ] 13. **`rag/rerank.py`:** call `RERANK_URL` and keep the top_k results.
 - [ ] 14. **`rag/generate.py`:** read the prompt file, build the messages with numbered extracts (`[1] ...`, `[2] ...`, then `Question : ...`), and pass temperature, top_p, max_tokens and `extra_body` top_k from the config.
 - [ ] 15. **`rag/pipeline.py`:** `answer(question, config) -> (answer, chunks)`. Scripts, evaluation and the future API all call this.
