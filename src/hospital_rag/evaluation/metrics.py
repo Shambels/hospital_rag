@@ -74,13 +74,27 @@ def is_refusal(answer):
     return "je ne sais pas" in answer.lower()
 
 
-def answer_scores(answer):
-    """Deterministic answer checks, for every question: refusal = 1 if the answer is a refusal.
+def cited_passages(answer):
+    """Numbers of the passages cited in the answer, written like [2]."""
+    return {int(number) for number in re.findall(r"\[(\d+)\]", answer)}
 
-    Its mean is the right-refusal rate on out_of_corpus questions, and the wrong-refusal rate on all the others.
-    Only reliable with prompts that impose the sentence (strict and its variants), not with minimal.
+
+def answer_scores(answer, chunks, question):
+    """Deterministic answer checks.
+
+    refusal (every question) = 1 if the answer is a refusal: its mean is the right-refusal rate on out_of_corpus
+    questions and the wrong-refusal rate on the others. Only reliable with prompts that impose the sentence.
+    When the answer cites passages ([2]): citation_valid = share of cited numbers that exist (1..number of chunks),
+    citation_relevant = share of the existing cited chunks that prove part of the answer (judge_chunk, any grade).
     """
-    return {"refusal": float(is_refusal(answer))}
+    scores = {"refusal": float(is_refusal(answer))}
+    cited = cited_passages(answer)
+    if cited:
+        existing = [n for n in cited if 1 <= n <= len(chunks)]
+        scores["citation_valid"] = len(existing) / len(cited)
+        if existing and question["evidence"]:
+            scores["citation_relevant"] = sum(bool(judge_chunk(chunks[n - 1], question)) for n in existing) / len(existing)
+    return scores
 
 
 def retrieval_scores(chunks, question, top_k):

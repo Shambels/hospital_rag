@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from hospital_rag.evaluation.metrics import answer_scores, is_refusal, judge_chunk, retrieval_scores
+from hospital_rag.evaluation.metrics import answer_scores, cited_passages, is_refusal, judge_chunk, retrieval_scores
 
 # Two complementary facts (0 and 1); fact 0 has two interchangeable sources; one useful-only passage (grade 1)
 QUESTION = {
@@ -109,5 +109,22 @@ def test_refusal_misses_other_wordings():
 
 
 def test_answer_scores():
-    assert answer_scores("Je ne sais pas.") == {"refusal": 1.0}
-    assert answer_scores("5 mg par jour.") == {"refusal": 0.0}
+    assert answer_scores("Je ne sais pas.", [], QUESTION) == {"refusal": 1.0}
+    assert answer_scores("5 mg par jour.", [], QUESTION) == {"refusal": 0.0}
+
+
+def test_cited_passages():
+    assert cited_passages("5 mg [2], réduit en avril [1][3].") == {1, 2, 3}
+    assert cited_passages("5 mg par jour.") == set()
+
+
+def test_citation_scores():
+    chunks = [NOISE, chunk("a.docx", "Ramipril 5 mg"), NOISE]
+    # [2] exists and is relevant, [3] exists but is noise, [7] doesn't exist
+    scores = answer_scores("5 mg par jour [2][3][7].", chunks, QUESTION)
+    assert scores["citation_valid"] == pytest.approx(2 / 3)
+    assert scores["citation_relevant"] == 0.5
+
+
+def test_no_citation_scores_without_citations():
+    assert set(answer_scores("5 mg par jour.", [NOISE], QUESTION)) == {"refusal"}

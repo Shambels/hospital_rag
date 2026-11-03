@@ -33,6 +33,34 @@ def stored_config(config):
     return stored
 
 
+def flatten(config, prefix=""):
+    """{"generation": {"temperature": 0}} -> {"generation.temperature": 0}"""
+    flat = {}
+    for key, value in config.items():
+        if isinstance(value, dict):
+            flat |= flatten(value, f"{prefix}{key}.")
+        else:
+            flat[f"{prefix}{key}"] = value
+    return flat
+
+
+def check_same_config(conn, name, config):
+    """Runs with the same name are repeats, averaged together: refuse a run whose config differs from earlier ones.
+
+    The stored config includes the prompt text, so an edited prompt file under an unchanged name is caught too.
+    """
+    previous_id = db.find_experiment(conn, name)
+    if previous_id is None:
+        return
+    previous, new = flatten(db.load_experiment(conn, previous_id)[2]), flatten(config)
+    changed = sorted(key for key in previous.keys() | new.keys() if previous.get(key) != new.get(key))
+    if changed:
+        raise ValueError(
+            f"experiment {name!r} already ran (id {previous_id}) with another config: {', '.join(changed)}. "
+            "Give this configuration another name."
+        )
+
+
 def score_rows(question, scores):
     """{metric: value} or {metric: (value, reason)} -> rows for db.insert_scores()."""
     rows = []
@@ -52,6 +80,7 @@ def run_experiment(config):
 
     with db.connect() as conn:
         db.create_tables(conn)
+        check_same_config(conn, config["name"], stored_config(config))
         experiment_id = db.start_experiment(conn, config["name"], stored_config(config))
         logger.info("experiment %d: %s (%d questions, generation %s)",
                     experiment_id, config["name"], len(questions), "on" if generating else "off")
@@ -67,7 +96,7 @@ def run_experiment(config):
                 }])
                 scores = retrieval_scores(result["chunks"], question, top_k)
                 if generating:
-                    scores |= answer_scores(result["answer"])
+                    scores |= answer_scores(result["answer"], result["chunks"], question)
                 db.insert_scores(conn, experiment_id, score_rows(question, scores))
                 logger.info("[%d/%d] %s %s %.0f ms", i, len(questions), question["id"],
                             f"recall@5={scores['recall@5']:.2f}" if "recall@5" in scores else "", latency_ms)

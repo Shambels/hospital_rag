@@ -7,7 +7,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 - **Phase 0:** done.
 - **Phase 1:** **done.** ETL, RAG, `ask.py`, metrics (unit tests: `uv run pytest`), LLM judge, and the two experiment passes (`run_experiment.py`, `judge_experiment.py`).
 - **Phase 2:** done. Baseline = experiment 10 (run + judge), the reference of every experiment.
-- **Phase 3:** step 21 (chunking) done: baseline chunking kept. Next: step 22 (retrieval parameters).
+- **Phase 3:** steps 21–23 done: baseline kept everywhere (chunking, retrieval parameters, temperature 0, `top_k = 5`). Step 23 corrected: its runs used an edited prompt (see step 23). Next: step 24 (system prompts), with a second `baseline` run to measure the noise.
 - **Phase 4:** not started.
 
 ## Phase 0 — Fix the setup
@@ -237,11 +237,120 @@ pe` and `date`.
       - Smaller chunks cost more for nothing: 128/32 has 46 % more chunks than the baseline for the same recall and a lower MRR/nDCG.
       - **Kept: the baseline chunking (512/0).** No configuration beats it on more than noise (4 questions up, 4 down out of 100), so none goes to the judge (the exercise judges only "les configurations retenues").
     - Note: `answers.latency_ms` of the baseline includes generation (~960 ms); the retrieval-only runs are ~160 ms. Per-stage timings are not stored, only the total.
-- [ ] 22. **§3 Retrieval parameters:** top_k 3, 5, 10; candidates 10, 30, 50; RRF `k` vs DBSF. No reindexing.
-- [ ] 23. **§3 Generation parameters:** temperature 0, 0.3, 0.7, 1, plus top_p and top_k. Judge only, **3 runs each**; look at the spread, not just the mean, and watch the refusals.
+- [x] 22. **§3 Retrieval parameters:** top_k 3, 5, 10; candidates 10, 30, 50; RRF `k` vs DBSF. No reindexing.
+    - 7 TOMLs, each = `baseline.toml` with one `[search]` key changed + `enabled = false`: `top_k_3`, `top_k_10`, `candidates_10`, `candidates_50`, `rrf_k_10`, `rrf_k_100`, `fusion_dbsf` (experiments 16–22, 12–22 s each, baseline index reused). Made with a helper that edits a key inside one named section (`top_k` exists in `[search]` and `[generation]`), checked with `diff`.
+
+      | Experiment | recall@3 | hit@5 | MRR@5 | recall@5 | nDCG@5 | recall@10 | retrieval ms |
+      |---|---|---|---|---|---|---|---|
+      | baseline | 0.856 | 0.950 | 0.833 | 0.913 | 0.816 | – | ≈ 160 |
+      | top_k_3 | 0.856 | – | – | – | – | – | 171 |
+      | top_k_10 | 0.856 | 0.950 | 0.833 | 0.913 | 0.816 | **0.953** | 152 |
+      | candidates_10 | 0.872 | 0.950 | 0.824 | 0.916 | 0.806 | – | **106** |
+      | candidates_50 | = baseline | | | | | | 201 |
+      | rrf_k_10, rrf_k_100, fusion_dbsf | = baseline | | | | | | ≈ 160 |
+
+    - **Conclusions:**
+      - **Fusion (RRF k=10/60/100, DBSF) and candidates 50 change nothing**, on all 100 questions. In step 12, without reranker, DBSF beat RRF (hit@5 0.89 vs 0.85); with the reranker, the difference disappears: fusion only decides which candidates reach the reranker, and the relevant chunks are among the 30 either way (hit@30 = 1.00). The reranker re-scores everything, so the fusion's ranking is thrown away.
+      - **candidates 10**: +3 / −2 questions (noise), but the reranker is ~35 % faster (106 vs ≈ 160 ms): the rerank cost grows with the number of candidates (10 → 106 ms, 30 → ≈ 160, 50 → 201).
+      - **top_k 3** loses facts: recall@3 0.856 vs recall@5 0.913.
+      - **top_k 10** gains facts: recall@10 **0.953** (+0.04): `lay_language` 0.75 → 1.00, `cross_notice` 0.77 → 0.89, `multi_hop` 0.58 → 0.67, `cross_patient` → 1.00 (Q037, Q057, Q058, Q078, Q088, Q092, Q106). The @3/@5 scores are identical to the baseline, as expected (the reranker sorts the same candidates).
+      - **Kept: baseline retrieval parameters**, except that **`top_k_10` is the one candidate worth testing with generation + judge**: 2× more prompt tokens, does the LLM use the extra facts or get distracted? (`[generation] enabled = true` → run pass with the generator, then judge pass.)
+    - [ ] `top_k_10` with generation + judge: to do with the generator (and reconsidered with step 24: the wrong refusals of `strict.txt` rule 2 are on the same `multi_hop` questions).
+- [x] 23. **§3 Generation parameters:** temperature 0, 0.3, 0.7, 1, plus top_p and top_k. Judge only, **3 runs each**; look at the spread, not just the mean, and watch the refusals.
+    - TOMLs: `temperature_0.3`, `temperature_0.7`, `temperature_1` (one `[generation]` key changed), plus `top_k_10_gen` (step 22's follow-up: `[search] top_k = 10` with generation).
+    - ⚠️ **Correction (3 Nov):** `prompts/strict.txt` had an uncommitted edit adding a patient rule (« Si la question mentionne un patient, n'utilise que les passage qui concernent ce patient. »). Every run of this step (23–33) used it; the baseline (10) didn't. Fixed:
+      - the edited text is now `prompts/patient.txt` (exactly as run, typo included) and `strict.txt` is back to its committed version, identical to experiment 10's;
+      - experiment 23, run as "baseline", is relabelled **`prompt_patient`** (`experiments/prompt_patient.toml` reproduces its config exactly): it is the §4 patient variant;
+      - experiments 24–33 have a `note` in their config: their reference is `prompt_patient` (23), not `baseline` (10);
+      - **guard added** in `runner.check_same_config()`: a run is refused if its name already ran with another config (prompt text included). It now refuses `temperature_*` and `top_k_10_gen` under their names, as it should.
+    - [x] Run pass (generator): `prompt_patient` (23), `top_k_10_gen` (24), `temperature_0.3` (25, 28, 31), `temperature_0.7` (26, 29, 32), `temperature_1` (27, 30, 33). ~2 min each. All with the patient-rule prompt.
+
+      | Experiment | Runs | out_of_corpus refused | Wrong refusals (/100) | Identical answers across runs | Refusal flips | Median length (chars) | Median latency |
+      |---|---|---|---|---|---|---|---|
+      | prompt_patient (T = 0) | 1 | 6/6 | 7 | – | – | 112 | 970 ms |
+      | temperature_0.3 | 3 | 6/6/6 | 7/6/7 | 33/106 | 1 | 113 | 1034 ms |
+      | temperature_0.7 | 3 | 6/6/6 | 6/6/6 | 17/106 | 2 | 118 | 1057 ms |
+      | temperature_1 | 3 | 6/6/6 | 7/7/9 | 11/106 | 3 | 126 | 1065 ms |
+      | top_k_10_gen | 1 | 6 | **5** | – | – | 110 | 1167 ms |
+
+    - **Temperature 0 is reproducible** (measured in step 24): a second `baseline` run (34), 6 days and a reboot after the first (10), gives **identical answers on 106/106 questions**. The "45/106 answers differ" seen first was entirely the prompt change. The 3/10 differences seen when re-asking questions were probably the same cause: the prompt file was edited again (« passage » → « passages ») at 11:13, during that check.
+    - **Temperature** (compared with `prompt_patient`, same prompt):
+      - Refusals of out_of_corpus questions: 6/6 at every temperature.
+      - Wrong refusals: 6–9 everywhere, always the same `multi_hop` questions (+ Q017, Q058 at T = 1): temperature doesn't fix the rule 2 problem.
+      - Dispersion grows with temperature: identical answers across the 3 runs 33 → 17 → 11 /106 from T = 0.3 to 1. At T = 1, one answer (Q058, run 33) rambled to 2074 characters and was cut at `max_tokens = 512`.
+      - Answers get slightly longer and slower as temperature rises (112 → 126 characters, 970 → 1065 ms).
+      - **Not judged** (decision of 3 Nov): the deterministic results already show what temperature does here, and a factual medical RAG keeps temperature 0. **Kept: temperature 0.**
+    - [x] Judge pass: experiments 24 (`top_k_10_gen`, 2377 s + 93 s to retry Q004's faithfulness timeout) and 23 (`prompt_patient`, 1445 s).
+
+      | Metric | baseline (10) | prompt_patient (23) | top_k_10_gen (24, patient prompt) |
+      |---|---|---|---|
+      | contextual_precision | 0.876 | 0.876 | 0.865 |
+      | contextual_recall | 0.942 | 0.942 | 0.923 |
+      | faithfulness | 0.881 | 0.942 | 0.942 |
+      | answer_relevancy | 0.910 | 0.923 | 0.935 |
+      | correctness | 0.850 | 0.877 | 0.838 |
+
+      - contextual_precision / recall identical for 10 and 23: same chunks → same scores, the judge is stable when its input doesn't change. Once (Q015 faithfulness) a score changed with the same answer text: the judge isn't perfectly deterministic.
+      - **Judge noise: not measured yet** (10 vs 23 differ by the prompt). The second `baseline` run of step 24, judged, will give it.
+    - **top_k_10_gen vs prompt_patient** (its real reference): correctness 0.838 vs 0.877, faithfulness equal, relevancy 0.935 vs 0.923; 5 wrong refusals instead of 7; +20 % latency, twice the prompt. No gain in answer quality on the sample. **Kept: `top_k = 5`.** A clean re-test needs a new name (e.g. `top_k_10_strict`), the guard refuses `top_k_10_gen`.
+    - `top_p` / sampling `top_k`: only matter at temperature > 0; not tested, since temperature 0 is kept.
+
 - [ ] 24. **§4 Prompts:** `minimal`, `strict`, `citations`, `patient` (each variant = `strict.txt` + one rule), at temperature 0.
     - Count refusals both ways: questions with an answer that were refused, and `out_of_corpus` questions that were answered.
     - Check citations without an LLM: `cited_passages()` + `judge_chunk()`.
+    - Prompts (each = committed `strict.txt` with **one** change, checked with `diff`):
+      - `patient.txt`: + rule 3 « Si la question mentionne un patient, n'utilise que les passage qui concernent ce patient. » (already run and judged: experiment 23 `prompt_patient`);
+      - `citations.txt`: + rule 5 « Après chaque information, indique entre crochets le numéro de l'extrait… [2] … [1][3]. Ne cite rien après « Je ne sais pas. ». »;
+      - `partial.txt`: rule 2 rewritten: « Je ne sais pas. » only when the extracts contain **no** element of answer; otherwise give the part, then say in one sentence what the extracts don't allow to say;
+      - `minimal.txt`: unchanged.
+    - TOMLs: `prompt_minimal`, `prompt_citations`, `prompt_partial` (+ `prompt_patient`, which reproduces experiment 23).
+    - New in `metrics.py`: `cited_passages()`; `answer_scores(answer, chunks, question)` now also gives `citation_valid` (cited numbers that exist) and `citation_relevant` (cited chunks that prove part of the answer, `judge_chunk`), only when the answer cites something. 18 tests.
+    - Known limit: `refusal` only detects « Je ne sais pas »; `minimal`'s refusals ("il n'est pas possible…") won't be counted: read them with the judge.
+    - [x] Run pass (generator): `baseline` #2 (34), `prompt_minimal` (35), `prompt_citations` (36), `prompt_partial` (37). 100–234 s each.
+
+      | Run | out_of_corpus refused | Wrong refusals (/100) | Median length (chars) | Median latency |
+      |---|---|---|---|---|
+      | baseline #1 (10) / #2 (34) | 6/6 · 6/6 | 7 · 7 (same questions) | 110 · 110 | 944 · 946 ms |
+      | prompt_patient (23) | 6/6 | 7 | 114 | 986 ms |
+      | prompt_minimal (35) | 0/6 (not detected) | 0 (not detected) | **407** | **1935 ms** |
+      | prompt_citations (36) | 6/6 | 7 | **93** | 925 ms |
+      | prompt_partial (37) | 6/6 | **3** | 222 | 1259 ms |
+
+      - **baseline #1 vs #2: 106/106 identical answers**: temperature 0 is reproducible (step 23 corrected).
+      - **citations:** 93/93 non-refusal answers cite an extract; `citation_valid` **1.000** (no invented number); `citation_relevant` **0.890**. Some "irrelevant" citations are a limit of the metric, not of the answer: Q088/Q106 cite the operation report whose **patient line** holds the date, but the evidence snippet (« cholécystectomie ») is elsewhere; Q037 cites the discharge letter instead of the notice. Also the shortest answers of all prompts.
+      - **partial:** 7 → 3 wrong refusals, out_of_corpus still 6/6 refused. But reading the answers: only **Q017** is truly answered (« perforé… péritonite localisée », full expected answer); **Q072** gives half (current metformin dose, contrast instructions missing: retrieval); **Q012 and Q089 are refusals in other words** (« il n'est pas possible de déterminer… »), which break the prompt's own rule and that `is_refusal()` can't see. Real gain: 1 question, plus 1 half. The judge's correctness decides.
+      - **minimal:** answers 4× longer, latency 2×, one answer cut at 512 tokens (Q072); its refusals never use the sentence, so 0/6 "refused" is a detection artefact.
+      - Unanswerable for every prompt: Q013, Q071, Q078, Q089 (+ Q012, Q072 partly): the second fact isn't in the 5 chunks, a **retrieval** failure (`multi_hop`), for step 27 (question decomposition).
+    - [ ] Judge pass (judge): the same 4 (~26 min each) + the combination (38). `baseline` #2 has the same answers as #1, so judging it measures the **judge's own noise**, alone.
+    - [x] **Combination** (requested 3 Nov): `prompts/combined.txt` = `strict.txt` + rule 2 of `partial` + the patient rule (typo « passage » fixed) + the citation rule (7 rules), with chunks **256/0**: `experiments/combined_chunks_256_overlap_0.toml`, experiment **38** (109 s). Four changes at once vs the baseline: it says whether the combination is better, not which change does it (the single-change runs 14, 23, 36, 37 do).
+
+      | Run | recall@5 | nDCG@5 | out_of_corpus refused | Wrong refusals | citation_valid | citation_relevant | Median length | Median latency |
+      |---|---|---|---|---|---|---|---|---|
+      | baseline (10) | 0.913 | 0.816 | 6/6 | 7 | – | – | 110 | 944 ms |
+      | citations (36) | 0.913 | 0.816 | 6/6 | 7 | 1.000 | 0.890 | 93 | 925 ms |
+      | partial (37) | 0.913 | 0.816 | 6/6 | 3 | – | – | 222 | 1259 ms |
+      | **combined 256/0 (38)** | 0.913 | 0.817 | 6/6 | 5 | 1.000 | 0.851 | 117 | 994 ms |
+
+      - Retrieval identical to the baseline (256/0 ≈ 512/0, as in step 21).
+      - 95/95 non-refusal answers cite an extract, no invented number.
+      - The citation rule keeps `partial`'s answers short (117 characters vs 222) and its refusals cleaner: Q089 is now a plain « Je ne sais pas. », Q072 ends with it. So "5 wrong refusals" is more honest than `partial`'s "3", not worse.
+      - Q017 answered with the full expected answer and its source (« perforé… péritonite localisée [1] »). Q012 is still a refusal in other words.
+      - Judge: `uv run python scripts/judge_experiment.py combined_chunks_256_overlap_0` (with the judge).
+    - [ ] **combined_v2** (3 Nov): rule 3 softened, « n'utilise que » → « utilise **en priorité** » les passages du patient (a notice concerns no patient, the strict rule could make the model ignore it on `multi_hop`). Prompts are versioned: `prompts/combined.txt` = experiment 38's text (restored), `prompts/combined_v2.txt` = the new one; once a prompt has run, it isn't edited, a new file is made.
+      - `experiments/combined_v2.toml`: chunks 256/0 + `combined_v2.txt`, top_k 5 → vs 38: effect of the rule 3 edit.
+      - `experiments/combined_v2_top_k_10.toml`: same + `[search] top_k = 10` → vs `combined_v2`: effect of 10 chunks.
+      - [x] Run pass (run by hand, 3 Nov): experiments **39** (`combined_v2`, 111 s) and **40** (`combined_v2_top_k_10`, 136 s).
+
+        | Run | recall@5 | recall@10 | out_of_corpus refused | Wrong refusals | citation_valid | citation_relevant | Median length | Median latency |
+        |---|---|---|---|---|---|---|---|---|
+        | combined (38) | 0.913 | – | 6/6 | 5 | 1.000 | 0.851 | 118 | 994 ms |
+        | combined_v2 (39) | 0.913 | – | 6/6 | 5 | 1.000 | 0.868 | 120 | 992 ms |
+        | combined_v2_top_k_10 (40) | 0.913 | 0.953 | 5/6 → **6/6** (see below) | **4** | 1.000 | 0.774 | 124 | 1250 ms |
+
+        - **Rule 3 edit (38 → 39): no deterministic change** (same refusals, same questions); the judge decides.
+        - **10 chunks (39 → 40):** Q078 now answered with the expected precaution (the morphine notice was at rank 9) → 4 wrong refusals. The "5/6 out_of_corpus" is a detection artefact: Q045 is refused in other words (« Les extraits ne contiennent aucune information… »), no hallucination. `citation_relevant` drops (0.868 → 0.774): more chunks cited that aren't evidence. Latency +26 %.
+        - Seen: with 5 chunks, Q045 got « Je ne sais pas. [1][5] », a citation after the refusal, against rule 6.
+      - [ ] Judge pass: `uv run python scripts/judge_experiment.py combined_v2 combined_v2_top_k_10` (with the judge, ~55 min).
 - [ ] 25. **§5 Models:**
     - Embedders: Harrier-OSS-v1-0.6b and Qwen3-Embedding-0.6B, each with its `query_instruction` and its own collection. Read the vector size from the model config.
     - Reranker: Qwen3-Reranker-0.6B with the special vLLM command (see [Services](#swap-models-for-5)).
@@ -277,8 +386,8 @@ One GPU: RTX PRO 4000 Blackwell, **24 GB**. The embedder, the reranker and the g
 
 | Role | Model | Server | Port | Approx. VRAM |
 |---|---|---|---|---|
-| Embedder (baseline) | `~/models/rag/models/embedder/bge-m3` | vLLM | 8001 | ~2.4 GB |
-| Reranker (baseline) | `~/models/rag/models/reranker/bge-reranker-v2-m3` | vLLM | 8002 | ~2.4 GB |
+| Embedder (baseline) | `~/models/embedder/bge-m3` | vLLM | 8001 | ~2.4 GB |
+| Reranker (baseline) | `~/models/reranker/bge-reranker-v2-m3` | vLLM | 8002 | ~2.4 GB |
 | Generator | `~/models/qwen3.5-9b/llama/Qwen3.5-9B-UD-Q4_K_XL.gguf` | llama-server | 8000 | ~7–8 GB |
 | Judge | `~/models/qwen3.8-27b/llama/Qwen3.8-27B-UD-Q4_K_XL.gguf` | llama-server, alone | 8003 | ~20 GB |
 | Second judge (§8) | `~/models/gemma4-26b-a4b/llama/gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf` | llama-server, alone | 8003 | ~19 GB |
@@ -287,10 +396,10 @@ The VRAM figures are estimates from the file sizes: check them with `nvidia-smi`
 
 Why these:
 
-- **Embedder and reranker:** `~/models/rag/models/` holds exactly the models the exercise names. bge-m3 and bge-reranker-v2-m3 are the reference: multilingual, good in French, 8k tokens, and bge-m3 needs no query instruction. The Qwen3 and Harrier models are for §5 only.
+- **Embedder and reranker:** `~/models/` holds exactly the models the exercise names. bge-m3 and bge-reranker-v2-m3 are the reference: multilingual, good in French, 8k tokens, and bge-m3 needs no query instruction. The Qwen3 and Harrier models are for §5 only.
 - **Generator, Qwen3.5-9B Q4:** fits next to the embedder and reranker with room left for context, which a 27B doesn't. Fast enough for 106 questions × dozens of experiments, and a 9B model follows the « Je ne sais pas » rule reliably. The GGUF with llama-server also matches the exercise's `extra_body={"top_k": 40}`, a llama-server parameter.
 - **Judge, Qwen3.8-27B:** the strongest model available, and it only scores the 26-question sample, so speed matters less. Same family as the generator, so it may favour its answers: the Gemma second judge (§8) measures that.
-- **Not used:** diffusiongemma, muse-glimmer-30b, nemotron3-nano-4b; glm-ocr and paddleocr-vl (Docling's built-in OCR is enough for the 24 imaging PDFs; point it at `~/models/rag/models/docling` so it runs offline); gemma4-12b (vLLM only; a candidate for the "other LLM" test in §8).
+- **Not used:** diffusiongemma, muse-glimmer-30b, nemotron3-nano-4b; glm-ocr and paddleocr-vl (Docling's built-in OCR is enough for the 24 imaging PDFs; point it at `~/models/docling` so it runs offline); gemma4-12b (vLLM only; a candidate for the "other LLM" test in §8).
 
 ### Start order
 
@@ -299,7 +408,7 @@ One terminal per server. **Start the two vLLM servers first, then llama-server**
 ### Terminal 1 — embedder (port 8001)
 
 ```bash
-~/vllm_server/.venv/bin/vllm serve ~/models/rag/models/embedder/bge-m3 \
+~/vllm_server/.venv/bin/vllm serve ~/models/embedder/bge-m3 \
   --runner pooling --served-model-name bge-m3 --port 8001 \
   --dtype float16 --max-model-len 2048 \
   --gpu-memory-utilization 0.10 --enforce-eager
@@ -308,7 +417,7 @@ One terminal per server. **Start the two vLLM servers first, then llama-server**
 ### Terminal 2 — reranker (port 8002)
 
 ```bash
-~/vllm_server/.venv/bin/vllm serve ~/models/rag/models/reranker/bge-reranker-v2-m3 \
+~/vllm_server/.venv/bin/vllm serve ~/models/reranker/bge-reranker-v2-m3 \
   --runner pooling --served-model-name bge-reranker --port 8002 \
   --dtype float16 --max-model-len 2048 \
   --gpu-memory-utilization 0.10 --enforce-eager
@@ -367,11 +476,11 @@ Stop the baseline server on that port first.
 Embedders (terminal 1). They need the `Instruct: {task}\nQuery: {question}` format on queries (see their model cards), set with `query_instruction` in the TOML:
 
 ```bash
-~/vllm_server/.venv/bin/vllm serve ~/models/rag/models/embedder/qwen3-embedding-0.6b \
+~/vllm_server/.venv/bin/vllm serve ~/models/embedder/qwen3-embedding-0.6b \
   --runner pooling --served-model-name qwen3-embedding-0.6b --port 8001 \
   --max-model-len 2048 --gpu-memory-utilization 0.10 --enforce-eager
 
-~/vllm_server/.venv/bin/vllm serve ~/models/rag/models/embedder/harrier-oss-v1-0.6b \
+~/vllm_server/.venv/bin/vllm serve ~/models/embedder/harrier-oss-v1-0.6b \
   --runner pooling --served-model-name harrier-oss-v1-0.6b --port 8001 \
   --max-model-len 2048 --gpu-memory-utilization 0.10 --enforce-eager
 ```
@@ -379,11 +488,11 @@ Embedders (terminal 1). They need the `Instruct: {task}\nQuery: {question}` form
 Reranker (terminal 2), the command from the exercise with local paths:
 
 ```bash
-~/vllm_server/.venv/bin/vllm serve ~/models/rag/models/reranker/qwen3-reranker-0.6b \
+~/vllm_server/.venv/bin/vllm serve ~/models/reranker/qwen3-reranker-0.6b \
   --runner pooling --served-model-name qwen3-reranker --port 8002 \
   --max-model-len 2048 --gpu-memory-utilization 0.10 --enforce-eager \
   --hf-overrides '{"architectures": ["Qwen3ForSequenceClassification"], "classifier_from_token": ["no", "yes"], "is_original_qwen3_reranker": true}' \
-  --chat-template ~/models/rag/models/reranker/qwen3_reranker.jinja
+  --chat-template ~/models/reranker/qwen3_reranker.jinja
 ```
 
 | Flag | Why |

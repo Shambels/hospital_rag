@@ -1,0 +1,30 @@
+# experiments/rrf_k_10.toml — §3: retrieval parameters, retrieval only
+name = "rrf_k_10"
+
+[chunking]
+max_tokens = 512
+overlap = 0
+patient_line = true
+
+[embedder]
+model = "bge-m3"
+query_instruction = ""
+
+[search]
+method = "hybrid"          # dense, sparse or hybrid
+fusion = "rrf"             # hybrid only: rrf or dbsf
+rrf_k = 10                 # rrf only
+candidates = 30
+top_k = 5
+
+[reranker]
+model = "bge-reranker"
+
+[generation]
+enabled = false              # false: retrieval only, for experiments the deterministic metrics measure
+model = "qwen3.5-9b"        # served name (llama-server -a)
+system_prompt = "prompts/strict.txt"
+temperature = 0.0
+top_p = 1.0
+top_k = 40                  # sampling: candidate tokens at each step, not the number of chunks
+max_tokens = 512
