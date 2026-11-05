@@ -55,7 +55,11 @@ def collection_name(config):
     """
     chunking = config["chunking"]
     name = f"hopital__{config['embedder']['model']}__{chunking['max_tokens']}_{chunking['overlap']}"
-    return name if chunking["patient_line"] else name + "__no-patient-line"
+    if not chunking["patient_line"]:
+        name += "__no-patient-line"
+    if chunking.get("strip_header", False):
+        name += "__no-header"
+    return name
 
 
 def index_corpus(config, force=False):

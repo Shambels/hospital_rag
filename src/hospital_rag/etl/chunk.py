@@ -1,5 +1,6 @@
 """Chunking: converted documents -> chunks ready to embed. Depends on [chunking] and [embedder] of the config."""
 import json
+import re
 from datetime import date
 from functools import cache
 
@@ -39,6 +40,21 @@ def patient_line(meta):
     return f"Patient : {meta['patient_name']} (IPP {meta['patient_ipp']}) — {meta['title']} du {day}"
 
 
+# The lines of a document's header: hospital, identity, date, author, disclaimer (the PDF disclaimer wraps)
+HEADER_LINE = re.compile(r"^(Centre Hospitalier de Valmont|Patient :|Date :|Rédigé par :|\*?Document fictif"
+                         r"|Livret thérapeutique|comme référence médicale\.?$)")
+
+
+def is_header(chunk):
+    """A chunk of the document's header: no section heading (only the title) and nothing but header lines.
+
+    Both conditions matter: in the PDFs every section has the title as its only heading, so the heading test
+    alone would also match their content; the line test alone would be fooled by a header line inside a section.
+    """
+    lines = [line.strip() for line in chunk.text.splitlines() if line.strip()]
+    return len(chunk.meta.headings or []) <= 1 and bool(lines) and all(HEADER_LINE.match(line) for line in lines)
+
+
 def add_overlap(texts, tokenizer, overlap):
     """Prefix each chunk of a document with the last `overlap` tokens of the previous chunk."""
     result = []
@@ -65,6 +81,11 @@ def chunk_document(meta, config):
     reserved = overlap + (count_tokens(line, tokenizer) + 1 if line else 0)  # +1: the newline
     chunker = HybridChunker(tokenizer=HuggingFaceTokenizer(tokenizer=tokenizer, max_tokens=max_tokens - reserved))
     chunks = list(chunker.chunk(load_document(meta["document"])))
+    if config["chunking"].get("strip_header", False):
+        # The header repeats in every document of a patient, and its identity and date are already in the patient
+        # line: drop the leading header chunks (2 when a 128-token budget splits the header)
+        while chunks and is_header(chunks[0]):
+            chunks.pop(0)
 
     # Overlap on the chunk text only, so a heading is never repeated in the middle of the next chunk
     texts = add_overlap([chunk.text for chunk in chunks], tokenizer, overlap)

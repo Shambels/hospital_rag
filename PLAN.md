@@ -447,6 +447,7 @@ pe` and `date`.
       - **Best configuration on quality**, at +80 % latency; `combined_v2` stays the efficient choice. Next: split only the questions that need it.
     - Plan for avoiding redundant chunks (Jaccard, MinHash + LSH, MMR, and others): `deduplicate_plan.md`.
     - [x] **Deduplication, step 1** (5 Nov): redundancy metrics `redundancy@k`, `near_duplicates@k`, `documents@k` (Jaccard on chunk bodies, within one patient or notice), computed for every new run and for the 47 stored ones (`scripts/rescore.py --all`). Main finding: the near-duplicates are **header chunks** (Q005: 4 of its 5 chunks are the patient's headers), so boilerplate removal is next. Details: `deduplicate_plan.md`, *Step 1 results*.
+    - [x] **Deduplication, step 2** (5 Nov): `[chunking] strip_header = true` drops each document's header chunks (structural rule: title-only heading and only header lines; line frequency would have deleted « Pas d'allergie médicamenteuse connue », found in 18.6 % of documents). Run **57** (retrieval only): recall@5 0.913 → **0.943**, hit@5 0.950 → **0.990**, MRR 0.833 → 0.843, redundancy@5 0.051 → 0.007; 4 questions better (Q013, Q078, Q088, Q106), 0 worse; 24 % fewer chunks. Details: `deduplicate_plan.md`, *Step 2 results*.
 
 ## Phase 4 — Deliverables
 
