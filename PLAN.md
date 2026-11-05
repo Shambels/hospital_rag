@@ -430,6 +430,22 @@ pe` and `date`.
       - **But it splits too much:** 45/106 questions decomposed, not only the 12 `multi_hop` (8 `split`, 5 `negation`, 5 `temporal`…); recall lost on 4 questions (Q052 `temporal`, Q067, Q086, Q090); new wrong refusals Q037, Q052, Q086, Q090. Net: 7 wrong refusals before and after, but different ones. Q071's decomposition gave two near-identical sub-questions.
       - Cost: one more LLM call per question, latency +80 %.
       - **Conclusion:** decomposition fixes the `multi_hop` retrieval failure; to keep, it should only split questions that need it (a stricter prompt, or only questions naming both a patient and a drug). Not judged.
+    - **Follow-up, 5 Nov: `combined_v2_decomposition`** (`combined_v2.toml` + `[decomposition]`, one change; run and judge by hand: experiment **56**, 201 s, 26/26 judged). `decomposition_gen` (55) was judged too (correctness 0.877, faithfulness 0.920).
+
+      | Metric | baseline (10) | combined_v2 (39) | decomposition_gen (55) | **combined_v2_decomposition (56)** |
+      |---|---|---|---|---|
+      | recall@5 / `multi_hop` | 0.913 / 0.58 | 0.913 / 0.58 | 0.922 / 0.75 | 0.922 / 0.75 |
+      | faithfulness | 0.881 | **1.000** | 0.920 | 0.987 |
+      | answer_relevancy | 0.910 | 0.917 | 0.919 | **0.936** |
+      | correctness | 0.850 | 0.873 | 0.877 | **0.881** |
+      | out_of_corpus refused / wrong refusals | 6/6 / 7 | 6/6 / 5 | 6/6 / 7 | 6/6 / **3** |
+      | citations valid / relevant | – | 1.000 / 0.868 | – | 1.000 / 0.885 |
+      | median latency | 944 ms | 992 ms | 1697 ms | 1785 ms |
+
+      - **The two changes add up**: the prompt keeps the answers faithful and sourced, decomposition brings the missing facts; wrong refusals 5 → **3**, which neither reached alone. Newly answered, with sources: Q013 (correctness 0.00 → 0.70), Q072, Q089, Q078 (half).
+      - **Still there**: the over-splitting regressions (Q052 `temporal` recall 1.0 → 0.0 and a new wrong refusal; Q086, Q090 recall 1.0 → 0.5; Q017 correctness 1.00 → 0.50, Q020 0.80 → 0.60) and Q071 (bad decomposition).
+      - **Best configuration on quality**, at +80 % latency; `combined_v2` stays the efficient choice. Next: split only the questions that need it.
+    - Plan for avoiding redundant chunks (Jaccard, MinHash + LSH, MMR, and others): `deduplicate_plan.md`.
 
 ## Phase 4 — Deliverables
 
