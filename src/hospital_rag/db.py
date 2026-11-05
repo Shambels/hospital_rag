@@ -12,9 +12,14 @@ def load_sql(name):
     return files("hospital_rag").joinpath("sql", f"{name}.sql").read_text(encoding="utf-8")
 
 
-def connect():
-    """Open a connection. Use it as `with connect() as conn:`: commit on success, rollback on error."""
-    return psycopg.connect(settings.postgres_url)
+def connect(read_only=False):
+    """Open a connection. Use it as `with connect() as conn:`: commit on success, rollback on error.
+
+    read_only=True makes PostgreSQL refuse any write on this connection (used by the UI).
+    """
+    conn = psycopg.connect(settings.postgres_url)
+    conn.read_only = read_only
+    return conn
 
 
 def create_tables(conn):
@@ -80,6 +85,16 @@ def load_answers(conn, experiment_id):
 def load_score_keys(conn, experiment_id):
     """The (question_id, metric) pairs already scored (non-NULL): lets an interrupted judge pass resume."""
     return set(conn.execute(load_sql("load_score_keys"), (experiment_id,)).fetchall())
+
+
+def question_answers(conn, question_id):
+    """Rows of (experiment id, name, answer, chunks, latency_ms) for one question, in every finished experiment."""
+    return conn.execute(load_sql("question_answers"), (question_id,)).fetchall()
+
+
+def question_scores(conn, question_id):
+    """Rows of (experiment id, metric, value, reason) for one question."""
+    return conn.execute(load_sql("question_scores"), (question_id,)).fetchall()
 
 
 def compare_experiments(conn):

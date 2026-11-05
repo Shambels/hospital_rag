@@ -8,7 +8,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 - **Phase 1:** **done.** ETL, RAG, `ask.py`, metrics (unit tests: `uv run pytest`), LLM judge, and the two experiment passes (`run_experiment.py`, `judge_experiment.py`).
 - **Phase 2:** done. Baseline = experiment 10 (run + judge), the reference of every experiment.
 - **Phase 3:** steps 21–23 done: baseline kept everywhere (chunking, retrieval parameters, temperature 0, `top_k = 5`). Step 23 corrected: its runs used an edited prompt (see step 23). Steps 24 (prompts, judge pass partly skipped), 25 (models), 26 (filters) and 27 (reranker threshold, question decomposition) done. **Phase 3 complete.**
-- **Phase 4:** README and RAPPORT done; bonus UI (step 28) not done.
+- **Phase 4:** done: README, RAPPORT and the bonus UI. **Every step of the plan is done.**
 
 ## Phase 0 — Fix the setup
 
@@ -433,7 +433,13 @@ pe` and `date`.
 
 ## Phase 4 — Deliverables
 
-- [ ] 28. **(Bonus) `ui/app.py`:** a read-only Streamlit app that imports from `src/`. It shows a leaderboard per metric, a two-experiment comparison (per question type, questions improved or degraded) and question details.
+- [x] 28. **(Bonus) `ui/app.py`:** a read-only Streamlit app that imports from `src/`. It shows a leaderboard per metric, a two-experiment comparison (per question type, questions improved or degraded) and question details.
+    - `uv run streamlit run ui/app.py` (http://localhost:8501).
+    - Read-only **enforced**: `db.connect(read_only=True)` sets the connection read-only, PostgreSQL refuses any write (checked: `ReadOnlySqlTransaction`).
+    - Imports from `src/`: `evaluation.report.load_report_data()` (same data as the HTML report), `evaluation.runner.flatten()` (config differences), `evaluation.metrics.judge_chunk()` (the ✓ on relevant chunks), and two new `db.py` functions with their SQL files (`question_answers`, `question_scores`).
+    - Refusals are split into "out_of_corpus refused" (higher is better) and "wrong refusals" (lower is better) so that both can be ranked.
+    - Data cached 5 min (`st.cache_data`), with a "Reload from the database" button.
+    - Tested headless with `streamlit.testing.AppTest`: the 3 pages without exception, leaderboard 39 rows, numbers equal to the report's; the server answers its health check.
 - [x] 29. **`README.md`:** install, `docker compose`, model servers (copy the [Services](#services) section), ingest, run, ask.
     - Sections: requirements (GPU, models folder), installation and `.env`, model servers (with which commands need which server), usage (ingest, ask, run, judge, report, tests), the experiment file reference (every key, the optional sections), the "one name = one config" rule and "never edit a used prompt", the layout, and a troubleshooting table of the problems met during the exercise.
     - Checked: every script accepts the options shown; the README's TOML example parses to exactly `baseline.toml`.

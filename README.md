@@ -122,6 +122,18 @@ uv run python scripts/report.py              # → data/reports/metrics.html, op
 
 A self-contained page: leaderboard (with the config keys that differ from `baseline`), scores by question type, and a comparison of two experiments question by question. Re-run it after each experiment.
 
+### 6. Explore (dashboard)
+
+```bash
+uv run streamlit run ui/app.py               # → http://localhost:8501
+```
+
+A live, read-only view of the database (its connection is opened read-only: PostgreSQL refuses any write). Three pages:
+**Leaderboard** (choose the metrics, sort, the config keys that differ from `baseline`), **Compare two experiments**
+(by question type, then the questions improved and degraded), **Question detail** (the expected answer and the evidence,
+then for each chosen experiment its answer, its scores with the judge's explanations, and its chunks with a ✓ on the
+relevant ones). "Reload from the database" after a new run.
+
 ### Tests
 
 ```bash
@@ -191,6 +203,7 @@ max_tokens = 512
 │   ├── evaluation/              # metrics, judge, runner, report
 │   └── templates/report.html
 ├── tests/
+├── ui/app.py                    # Streamlit dashboard (read-only)
 ├── PLAN.md                      # the step-by-step log of the exercise, with every result
 └── RAPPORT.md                   # the final report
 ```
