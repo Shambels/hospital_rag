@@ -446,6 +446,7 @@ pe` and `date`.
       - **Still there**: the over-splitting regressions (Q052 `temporal` recall 1.0 → 0.0 and a new wrong refusal; Q086, Q090 recall 1.0 → 0.5; Q017 correctness 1.00 → 0.50, Q020 0.80 → 0.60) and Q071 (bad decomposition).
       - **Best configuration on quality**, at +80 % latency; `combined_v2` stays the efficient choice. Next: split only the questions that need it.
     - Plan for avoiding redundant chunks (Jaccard, MinHash + LSH, MMR, and others): `deduplicate_plan.md`.
+    - [x] **Deduplication, step 1** (5 Nov): redundancy metrics `redundancy@k`, `near_duplicates@k`, `documents@k` (Jaccard on chunk bodies, within one patient or notice), computed for every new run and for the 47 stored ones (`scripts/rescore.py --all`). Main finding: the near-duplicates are **header chunks** (Q005: 4 of its 5 chunks are the patient's headers), so boilerplate removal is next. Details: `deduplicate_plan.md`, *Step 1 results*.
 
 ## Phase 4 — Deliverables
 

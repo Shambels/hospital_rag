@@ -122,6 +122,14 @@ uv run python scripts/report.py              # → data/reports/metrics.html, op
 
 A self-contained page: leaderboard (with the config keys that differ from `baseline`), scores by question type, and a comparison of two experiments question by question. Re-run it after each experiment.
 
+### Recompute a metric on stored runs
+
+```bash
+uv run python scripts/rescore.py --all       # or: rescore.py baseline 39
+```
+
+Computes the redundancy metrics (`redundancy@k`, `near_duplicates@k`, `documents@k`) of stored runs from their stored chunks: PostgreSQL only, no model. New runs get them automatically.
+
 ### 6. Explore (dashboard)
 
 ```bash

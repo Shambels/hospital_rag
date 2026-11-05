@@ -69,6 +69,74 @@ def ndcg(matches, evidence, k):
 METRICS = {"hit": hit, "mrr": mrr, "recall": recall, "ndcg": ndcg}
 
 
+REDUNDANCY_K = (5, 10)  # computed for every k <= [search] top_k: the LLM's usual context, and the larger one
+NEAR_DUPLICATE = 0.8    # Jaccard above which a chunk counts as a near-duplicate of an earlier one
+SHINGLE_SIZE = 3        # words per shingle
+
+
+def chunk_body(text):
+    """The chunk's own text, without the patient line and the headings (1–2 short lines without final punctuation).
+
+    Without this, every chunk of one patient (or one notice) would look alike through their shared prefix.
+    """
+    lines = text.splitlines()
+    if lines and lines[0].startswith("Patient :"):
+        lines = lines[1:]
+    for _ in range(2):
+        if len(lines) > 1 and len(lines[0].split()) <= 6 and not lines[0].rstrip().endswith((".", "!", "?")):
+            lines = lines[1:]
+    return "\n".join(lines)
+
+
+def shingles(text):
+    """The set of SHINGLE_SIZE-word groups of a text (lowercase, normalised); the words themselves if it's shorter."""
+    words = normalize(text).casefold().split()
+    if len(words) < SHINGLE_SIZE:
+        return set(words)
+    return {" ".join(words[i:i + SHINGLE_SIZE]) for i in range(len(words) - SHINGLE_SIZE + 1)}
+
+
+def jaccard(a, b):
+    """|a ∩ b| / |a ∪ b| of two shingle sets; 0 for two empty sets."""
+    return len(a & b) / len(a | b) if a or b else 0.0
+
+
+def scope(document):
+    """Who a chunk is about: the patient (IPP prefix of the file name), or the notice itself.
+
+    Identical sentences in two patients' records are two facts (Q002: three patients with the same allergy line),
+    so chunks of different scopes are never counted as redundant.
+    """
+    prefix = document.split("_", 1)[0]
+    return prefix if prefix.isdigit() else document
+
+
+def redundancy_scores(chunks, top_k):
+    """How much the top k chunks repeat each other, for every k of REDUNDANCY_K <= top_k (every question).
+
+    redundancy@k = mean Jaccard (bodies) over the pairs of chunks of the same scope (0 across scopes);
+    near_duplicates@k = number of chunks with Jaccard >= NEAR_DUPLICATE to an earlier chunk of the same scope;
+    documents@k = number of distinct documents.
+    """
+    bodies = [shingles(chunk_body(chunk["text"])) for chunk in chunks]
+    scopes = [scope(chunk["document"]) for chunk in chunks]
+
+    def similarity(i, j):
+        return jaccard(bodies[i], bodies[j]) if scopes[i] == scopes[j] else 0.0
+
+    scores = {}
+    for k in REDUNDANCY_K:
+        if k > top_k:
+            continue
+        n = min(k, len(chunks))
+        pairs = [(i, j) for i in range(n) for j in range(i + 1, n)]
+        scores[f"redundancy@{k}"] = sum(similarity(i, j) for i, j in pairs) / len(pairs) if pairs else 0.0
+        scores[f"near_duplicates@{k}"] = float(sum(
+            any(similarity(i, j) >= NEAR_DUPLICATE for i in range(j)) for j in range(n)))
+        scores[f"documents@{k}"] = float(len({chunk["document"] for chunk in chunks[:n]}))
+    return scores
+
+
 def is_refusal(answer):
     """The system prompt asks for this exact sentence when the passages do not answer the question."""
     return "je ne sais pas" in answer.lower()

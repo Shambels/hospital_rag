@@ -11,7 +11,7 @@ import time
 from hospital_rag import db
 from hospital_rag.config import settings
 from hospital_rag.etl.index import index_corpus
-from hospital_rag.evaluation.metrics import answer_scores, filter_scores, retrieval_scores
+from hospital_rag.evaluation.metrics import answer_scores, filter_scores, redundancy_scores, retrieval_scores
 from hospital_rag.rag.generate import load_system_prompt
 from hospital_rag.rag.pipeline import answer, retrieve
 
@@ -95,6 +95,7 @@ def run_experiment(config):
                     "answer": result["answer"] if generating else None, "latency_ms": latency_ms,
                 }])
                 scores = retrieval_scores(result["chunks"], question, top_k)
+                scores |= redundancy_scores(result["chunks"], top_k)
                 if config.get("decomposition", {}).get("enabled", False):
                     scores["subquestions"] = float(len(result["subquestions"]))
                 if config.get("filters", {}).get("patient", "none") != "none":
@@ -110,6 +111,24 @@ def run_experiment(config):
         db.finish_experiment(conn, experiment_id, "done", time.time() - start)
         logger.info("experiment %d done in %.0f s", experiment_id, time.time() - start)
     return experiment_id
+
+
+def rescore_redundancy(experiment_id):
+    """Compute the redundancy metrics of a stored run from its stored chunks (their text is kept): no model needed."""
+    questions = {q["id"]: q for q in load_questions()}
+    with db.connect() as conn:
+        row = db.load_experiment(conn, experiment_id)
+        if row is None:
+            raise ValueError(f"no experiment {experiment_id}")
+        _, name, config, status = row
+        if status != "done":
+            raise ValueError(f"experiment {experiment_id} ({name}) is {status!r}, not 'done'")
+        top_k = config["search"]["top_k"]
+        rows = []
+        for question_id, (chunks, _) in db.load_answers(conn, experiment_id).items():
+            rows += score_rows(questions[question_id], redundancy_scores(chunks, top_k))
+        db.insert_scores(conn, experiment_id, rows)  # an upsert: running it twice changes nothing
+    logger.info("experiment %d (%s): %d redundancy scores", experiment_id, name, len(rows))
 
 
 def judge_experiment(experiment_id, judge_model=None, force=False):

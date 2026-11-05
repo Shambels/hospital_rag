@@ -6,7 +6,9 @@ import math
 
 import pytest
 
-from hospital_rag.evaluation.metrics import answer_scores, cited_passages, is_refusal, judge_chunk, retrieval_scores
+from hospital_rag.evaluation.metrics import (
+    answer_scores, chunk_body, cited_passages, is_refusal, jaccard, judge_chunk, redundancy_scores, retrieval_scores, shingles,
+)
 
 # Two complementary facts (0 and 1); fact 0 has two interchangeable sources; one useful-only passage (grade 1)
 QUESTION = {
@@ -128,3 +130,61 @@ def test_citation_scores():
 
 def test_no_citation_scores_without_citations():
     assert set(answer_scores("5 mg par jour.", [NOISE], QUESTION)) == {"refusal"}
+
+
+def test_chunk_body_strips_the_patient_line_and_the_headings():
+    text = ("Patient : M. Bruno MARTIN (IPP 4100002) — Ordonnance du 13/04/2025\nOrdonnance\nPrescription\n"
+            "- Ramipril 5 mg : 1 comprimé le matin.")
+    assert chunk_body(text) == "- Ramipril 5 mg : 1 comprimé le matin."
+    assert chunk_body("Fiche médicament : Metformine\nEffets indésirables\nNausées, diarrhée.") == "Nausées, diarrhée."
+
+
+def test_chunk_body_keeps_a_body_without_final_punctuation():
+    # a header chunk's first body line is long: it isn't a heading
+    text = "Compte rendu opératoire\nCentre Hospitalier de Valmont — Service de Chirurgie orthopédique\nDate : 21/03/2026"
+    assert chunk_body(text).startswith("Centre Hospitalier")
+
+
+def test_jaccard():
+    assert jaccard(shingles("a b c d"), shingles("a b c d")) == 1
+    assert jaccard(shingles("a b c d"), shingles("e f g h")) == 0
+    assert jaccard(shingles("a b c d"), shingles("a b c e")) == 1 / 3  # {abc, bcd} vs {abc, bce}
+
+
+def body(document, text, patient="Patient : X (IPP 1) — Doc du 01/01/2025\nDoc\nSection\n"):
+    return {"document": document, "text": patient + text}
+
+
+def test_same_text_in_the_same_patient_is_redundant():
+    same = "Allergie alimentaire à l'arachide (œdème des lèvres en 2018)."
+    chunks = [body("4100003_a.docx", same), body("4100003_b.docx", same)] + [body(f"notice_{i}.docx", f"texte {i} a b c") for i in range(3)]
+    scores = redundancy_scores(chunks, top_k=5)
+    assert scores["near_duplicates@5"] == 1
+    assert scores["redundancy@5"] == 1 / 10  # one identical pair out of 10
+    assert scores["documents@5"] == 5
+
+
+def test_same_text_in_two_patients_is_not_redundant():
+    # Q002: three patients with the same allergy line are three facts, not duplicates
+    same = "Allergie alimentaire à l'arachide (œdème des lèvres en 2018)."
+    chunks = [body("4100003_a.docx", same), body("4100017_a.docx", same), body("4100027_a.docx", same)]
+    scores = redundancy_scores(chunks, top_k=5)
+    assert scores["redundancy@5"] == 0 and scores["near_duplicates@5"] == 0
+
+
+def test_shared_headings_dont_make_chunks_redundant():
+    chunks = [body("4100002_a.docx", "Ramipril 10 mg par jour, amlodipine 10 mg."),
+              body("4100002_a.docx", "Hyperkaliémie à 5,8 mmol/L sur le bilan du 04/04/2025.")]
+    assert redundancy_scores(chunks, top_k=5)["redundancy@5"] == 0
+
+
+def test_a_changed_number_still_counts_as_similar():
+    # the temporal trap: lexically close, different meaning; what uses the metric must be checked on temporal questions
+    chunks = [body("4100002_a.docx", "Poursuite du ramipril 10 mg par jour le matin."),
+              body("4100002_b.docx", "Poursuite du ramipril 5 mg par jour le matin.")]
+    assert 0.3 < redundancy_scores(chunks, top_k=5)["redundancy@5"] < 0.8
+
+
+def test_redundancy_only_up_to_top_k():
+    assert set(redundancy_scores([NOISE] * 3, top_k=3)) == set()
+    assert {k.split("@")[1] for k in redundancy_scores([NOISE] * 10, top_k=10)} == {"5", "10"}

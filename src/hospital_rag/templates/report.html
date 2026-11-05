@@ -159,14 +159,18 @@ function configDiff(name) {
 }
 const durationOf = name => mean((groups.get(name) || []).map(e => e.duration_s).filter(v => v != null));
 
+// Metrics where a lower value is better: the best of a column is its minimum, and a decrease is shown in green
+const lowerIsBetter = m => /^(redundancy|near_duplicates)@/.test(m);
+
 // ---------- rendering ----------
-function deltaHtml(d) {
+function deltaHtml(d, metric) {
   if (d == null || Math.abs(d) < 0.0005) return "";
-  return `<span class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d.toFixed(3)}</span>`;
+  const good = lowerIsBetter(metric) ? d < 0 : d > 0;
+  return `<span class="delta ${good ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d.toFixed(3)}</span>`;
 }
 function heatStyle(v) {
   if (v == null) return "";
-  return `style="background: color-mix(in srgb, var(--accent) ${Math.round(v * 45)}%, transparent)"`;
+  return `style="background: color-mix(in srgb, var(--accent) ${Math.round(Math.min(v, 1) * 45)}%, transparent)"`;
 }
 function options(values, selected, label = v => v) {
   return values.map(v => `<option value="${esc(v)}" ${v === selected ? "selected" : ""}>${esc(label(v))}</option>`).join("");
@@ -177,9 +181,14 @@ const state = {sort: METRICS[0], typeMetric: METRICS[0], a: BASELINE, b: NAMES.f
 function leaderboard() {
   const base = Object.fromEntries(METRICS.map(m => [m, groupStat(BASELINE, m).mean]));
   const stats = NAMES.map(n => ({name: n, s: Object.fromEntries(METRICS.map(m => [m, groupStat(n, m)]))}));
-  const best = Object.fromEntries(METRICS.map(m => [m, Math.max(...stats.map(r => r.s[m].mean ?? -Infinity))]));
+  const best = Object.fromEntries(METRICS.map(m => {
+    const values = stats.map(r => r.s[m].mean).filter(v => v != null);
+    return [m, lowerIsBetter(m) ? Math.min(...values) : Math.max(...values)];
+  }));
+  const sign = lowerIsBetter(state.sort) ? -1 : 1;  // best first in both cases; experiments without the metric last
   const sorted = state.sort === "name" ? [...stats].sort((x, y) => x.name.localeCompare(y.name))
-    : [...stats].sort((x, y) => (y.s[state.sort].mean ?? -1) - (x.s[state.sort].mean ?? -1));
+    : [...stats].sort((x, y) => (x.s[state.sort].mean == null) - (y.s[state.sort].mean == null)
+        || sign * ((y.s[state.sort].mean ?? 0) - (x.s[state.sort].mean ?? 0)));
   const head = `<tr>
       <th class="left sortable ${state.sort === "name" ? "sorted" : ""}" data-sort="name">Experiment</th>
       <th class="left">Changes vs ${esc(BASELINE)}</th><th>Runs</th>
@@ -200,7 +209,7 @@ function leaderboard() {
         const spread = st.runs > 1 ? `<span class="muted small"> ±${st.sd.toFixed(3)}</span>` : "";
         return `<td class="${st.mean === best[m] && NAMES.length > 1 ? "best" : ""}" title="${st.runs} run(s)">
           <span class="cell">${fmt(st.mean)}${spread}<span class="bar" style="width:${Math.max(0, Math.min(1, st.mean)) * 100}%"></span></span>
-          ${name === BASELINE ? "" : deltaHtml(st.mean - base[m])}</td>`;
+          ${name === BASELINE ? "" : deltaHtml(st.mean - base[m], m)}</td>`;
       }).join("")}
       <td class="muted">${dur == null ? "–" : dur.toFixed(0) + " s"}</td></tr>`;
   }).join("");
@@ -234,7 +243,7 @@ function compare() {
     .sort((x, y) => (y.d ?? -9) - (x.d ?? -9));
   const maxAbs = Math.max(0.001, ...typeRows.map(r => Math.abs(r.d ?? 0)));
   const typeTable = `<table><tr><th class="left">Type</th><th>${esc(a)}</th><th>${esc(b)}</th><th>Δ</th><th class="left"></th></tr>${typeRows.map(r => `
-    <tr><td class="left">${esc(r.t)}</td><td>${fmt(r.va)}</td><td>${fmt(r.vb)}</td><td>${deltaHtml(r.d) || '<span class="muted small">=</span>'}</td>
+    <tr><td class="left">${esc(r.t)}</td><td>${fmt(r.va)}</td><td>${fmt(r.vb)}</td><td>${deltaHtml(r.d, m) || '<span class="muted small">=</span>'}</td>
     <td class="left">${r.d ? `<span class="deltabar" style="width:${Math.abs(r.d) / maxAbs * 120}px;background:var(${r.d > 0 ? "--pos" : "--neg"})"></span>` : ""}</td></tr>`).join("")}</table>`;
 
   const qa = perQuestion(a, m), qb = perQuestion(b, m);
@@ -254,7 +263,7 @@ function compare() {
       <label>A <select id="cmpA">${options(NAMES, a)}</select></label>
       <label>B <select id="cmpB">${options(NAMES, b)}</select></label>
       <label>Metric <select id="cmpMetric">${options(METRICS, m)}</select></label>
-      <span class="muted small">overall: ${fmt(groupStat(a, m).mean)} → ${fmt(groupStat(b, m).mean)} ${deltaHtml((groupStat(b, m).mean ?? 0) - (groupStat(a, m).mean ?? 0))}</span>
+      <span class="muted small">overall: ${fmt(groupStat(a, m).mean)} → ${fmt(groupStat(b, m).mean)} ${deltaHtml((groupStat(b, m).mean ?? 0) - (groupStat(a, m).mean ?? 0), m)}</span>
     </div>
     <div class="scroll">${typeTable}</div>
     ${list(improved, `Improved in ${esc(b)}`)}

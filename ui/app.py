@@ -18,6 +18,11 @@ st.set_page_config(page_title="RAG experiments", layout="wide")
 FAMILIES = ["hit", "mrr", "recall", "ndcg"]  # retrieval metrics first, in this order; the others after, alphabetically
 
 
+def lower_is_better(metric):
+    """Metrics where the best value is the lowest."""
+    return metric == "wrong refusals" or metric.startswith(("redundancy@", "near_duplicates@"))
+
+
 def metric_order(metric):
     family = next((i for i, f in enumerate(FAMILIES) if metric.startswith(f)), len(FAMILIES))
     k = int(metric.split("@")[1]) if "@" in metric else 0
@@ -91,14 +96,15 @@ if page == "Leaderboard":
     table = run_means.groupby(["name", "metric"]).mean().unstack("metric").reindex(index=names, columns=chosen)
     table.insert(0, "runs", experiments.groupby("name")["id"].count())
     table["changes vs " + reference] = [config_changes(experiments, n, reference) for n in table.index]
-    table = table.sort_values(sort_by, ascending=sort_by == "wrong refusals", na_position="last")
+    table = table.sort_values(sort_by, ascending=lower_is_better(sort_by), na_position="last")
     st.caption("Mean over the questions, then over the runs. Refusals are rates (wrong refusals: share of the 100 "
-               "answerable questions refused). Highlighted: best of each column (lowest for wrong refusals). "
+               "answerable questions refused). Highlighted: best of each column (lowest for wrong refusals, redundancy "
+               "and near-duplicates). "
                "Judge metrics: 26-question sample; retrieval: 100 questions; – : not measured.")
-    higher = [m for m in chosen if m != "wrong refusals"]
+    higher = [m for m in chosen if not lower_is_better(m)]
     styled = (table.style.format({m: "{:.3f}" for m in chosen}, na_rep="–")
               .highlight_max(subset=higher, color="#2f6fdf55").highlight_min(
-                  subset=[m for m in chosen if m == "wrong refusals"], color="#2f6fdf55"))
+                  subset=[m for m in chosen if lower_is_better(m)], color="#2f6fdf55"))
     st.dataframe(styled, width="stretch", height=min(38 * (len(table) + 1), 900))
     st.bar_chart(table[sort_by].dropna(), horizontal=True)
 
