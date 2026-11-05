@@ -434,7 +434,9 @@ pe` and `date`.
 ## Phase 4 — Deliverables
 
 - [ ] 28. **(Bonus) `ui/app.py`:** a read-only Streamlit app that imports from `src/`. It shows a leaderboard per metric, a two-experiment comparison (per question type, questions improved or degraded) and question details.
-- [ ] 29. **`README.md`:** install, `docker compose`, model servers (copy the [Services](#services) section), ingest, run, ask.
+- [x] 29. **`README.md`:** install, `docker compose`, model servers (copy the [Services](#services) section), ingest, run, ask.
+    - Sections: requirements (GPU, models folder), installation and `.env`, model servers (with which commands need which server), usage (ingest, ask, run, judge, report, tests), the experiment file reference (every key, the optional sections), the "one name = one config" rule and "never edit a used prompt", the layout, and a troubleshooting table of the problems met during the exercise.
+    - Checked: every script accepts the options shown; the README's TOML example parses to exactly `baseline.toml`.
 - [ ] 30. **`RAPPORT.md`:**
     - a comparison table built from the §7 SQL query;
     - the best config, chosen on quality, cost and latency;
