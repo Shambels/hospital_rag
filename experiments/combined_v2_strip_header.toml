@@ -1,0 +1,31 @@
+# experiments/combined_v2_strip_header.toml — dedup step 2: combined_v2 + header chunks dropped
+name = "combined_v2_strip_header"
+
+[chunking]
+max_tokens = 256
+overlap = 0
+patient_line = true
+strip_header = true         # drop the documents' header chunks (hospital, identity, date, author, disclaimer)
+
+[embedder]
+model = "bge-m3"
+query_instruction = ""
+
+[search]
+method = "hybrid"          # dense, sparse or hybrid
+fusion = "rrf"             # hybrid only: rrf or dbsf
+rrf_k = 60                 # rrf only
+candidates = 30
+top_k = 5
+
+[reranker]
+model = "bge-reranker"
+
+[generation]
+enabled = true              # false: retrieval only, for experiments the deterministic metrics measure
+model = "qwen3.5-9b"        # served name (llama-server -a)
+system_prompt = "prompts/combined_v2.txt"
+temperature = 0.0
+top_p = 1.0
+top_k = 40                  # sampling: candidate tokens at each step, not the number of chunks
+max_tokens = 512
