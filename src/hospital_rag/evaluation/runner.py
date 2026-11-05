@@ -11,7 +11,7 @@ import time
 from hospital_rag import db
 from hospital_rag.config import settings
 from hospital_rag.etl.index import index_corpus
-from hospital_rag.evaluation.metrics import answer_scores, retrieval_scores
+from hospital_rag.evaluation.metrics import answer_scores, filter_scores, retrieval_scores
 from hospital_rag.rag.generate import load_system_prompt
 from hospital_rag.rag.pipeline import answer, retrieve
 
@@ -97,6 +97,8 @@ def run_experiment(config):
                 scores = retrieval_scores(result["chunks"], question, top_k)
                 if config.get("decomposition", {}).get("enabled", False):
                     scores["subquestions"] = float(len(result["subquestions"]))
+                if config.get("filters", {}).get("patient", "none") != "none":
+                    scores |= filter_scores(result["patient_ipp"], question, result["fallback"])
                 if generating:
                     scores |= answer_scores(result["answer"], result["chunks"], question)
                 db.insert_scores(conn, experiment_id, score_rows(question, scores))

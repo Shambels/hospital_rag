@@ -74,6 +74,21 @@ def is_refusal(answer):
     return "je ne sais pas" in answer.lower()
 
 
+def filter_scores(extracted_ipp, question, fallback):
+    """How well the patient was extracted, against the question's patient_ipp (every question, when a filter is on).
+
+    filter_correct = the right patient, or none for a question without one; filter_wrong = another patient (the worst
+    case: the right records are excluded); filter_missed = the question names a patient, none was extracted.
+    """
+    expected = question["patient_ipp"]
+    return {
+        "filter_correct": float(extracted_ipp == expected),
+        "filter_wrong": float(extracted_ipp is not None and extracted_ipp != expected),
+        "filter_missed": float(expected is not None and extracted_ipp is None),
+        "filter_fallback": float(fallback),
+    }
+
+
 def cited_passages(answer):
     """Numbers of the passages cited in the answer, written like [2]."""
     return {int(number) for number in re.findall(r"\[(\d+)\]", answer)}

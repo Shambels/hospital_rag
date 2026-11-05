@@ -355,11 +355,26 @@ pe` and `date`.
     - Embedders: Harrier-OSS-v1-0.6b and Qwen3-Embedding-0.6B, each with its `query_instruction` and its own collection. Read the vector size from the model config.
     - Reranker: Qwen3-Reranker-0.6B with the special vLLM command (see [Services](#swap-models-for-5)).
     - Record indexing time, latency per question and GPU memory (`nvidia-smi`).
-- [ ] 26. **§6 Filters (`rag/filters.py`):**
+- [x] 26. **§6 Filters (`rag/filters.py`):** (4–5 Nov)
     - The LLM extracts JSON; the code maps the name to an IPP using `hopital_documents.json`. Never trust an ID written by the LLM.
     - If the filtered search returns nothing, fall back to an unfiltered search.
     - No patient filter for questions without a patient (`drug_info`, `cross_notice`, `cross_patient`).
     - Measure extraction accuracy against `patient_ipp` (correct, wrong, missed), the effect per question type, then compare with a plain name match that uses no LLM.
+    - `rag/filters.py`: `patient_from_names()` (the 60 known full names, accents and case folded, whole words; none if 0 or 2+ names: 8 last names are shared, a last name alone is ambiguous), `patient_from_llm()` (the LLM returns `{"patient_name": ...}` in JSON, the code looks it up among the known patients, never trusts an identifier), `patient_filter(ipp, scope)`, `question_filter(question, config)`.
+    - `scope = "patient_or_notice"` (default): this patient's records **or** any drug notice; `"patient_only"` excludes the notices.
+    - Optional `[filters]` section (`patient = "none" | "names" | "llm"`, `scope`): configs without it are unchanged, the guard still accepts `baseline`.
+    - `pipeline.retrieve()`: filter → search → **fallback without filter if the filtered search finds nothing** → rerank; returns `patient_ipp`, `fallback`, and `filter_ms` in the timings.
+    - `metrics.filter_scores()`: `filter_correct`, `filter_wrong`, `filter_missed`, `filter_fallback`, stored for every question when a filter is on. `tests/test_filters.py`: 8 tests (26 in total).
+    - TOMLs: `filter_names`, `filter_names_patient_only`, `filter_llm` (retrieval only).
+    - Results, experiments **49** (`filter_names`) and **50** (`filter_names_patient_only`):
+      - extraction by name matching: **106/106 correct**, 0 wrong, 0 missed, 0 fallback; no LLM, < 1 ms.
+      - retrieval: `patient_or_notice` = baseline on all 100 questions; `patient_only` loses 5 `multi_hop` questions (recall@5 0.58 → 0.42: the notices are excluded, as predicted), recall@5 0.893.
+      - **other patients' chunks in the top 5**: baseline **43/425 (10.1 %)** in 26/85 questions (`buried`, `split`, `dose` most), **0 with the filter**. Recall doesn't see them (they are never the evidence): they are distractors for the LLM. Their effect needs a run with generation.
+    - [x] `filter_llm` (experiment **51**): the LLM also extracts **106/106** correctly (0 wrong, 0 missed), same recall@5 (0.913), but retrieval latency **355 ms vs 151 ms** for name matching (+200 ms and one more LLM call per question). **On this corpus, name matching does as well with no LLM and no latency**: kept for the filter.
+    - [x] `filter_names_gen` (experiment **52**: baseline + name filter, with generation): out_of_corpus 6/6 refused; wrong refusals 7 → 8; latency 944 → 912 ms.
+      - Of the 26 questions that had other patients' chunks in the baseline top 5, **none had a wrong answer because of them**: the patient line and the LLM already ignored them. 22 answers changed, mostly in form (with only one patient's records, the model stops repeating the patient's name).
+      - **One regression, Q010** (« Mme Françoise Gauthier est-elle allergique à la pénicilline ? »): both runs had her two chunks « Pas d'allergie médicamenteuse connue », but the filtered run answered « Je ne sais pas. ». In the baseline, another patient's chunk (« Allergie à la pénicilline », 4100016) put the word « pénicilline » in the context and made the link easier; without it, `strict.txt` rule 3 (« aucune déduction ») blocks "no drug allergy → not allergic to penicillin". A distractor that helped by chance: the cause is the prompt's strictness, not the filter.
+    - **Conclusions:** extraction is solved (both methods perfect, names free); the filter removes all other patients' chunks (10 % → 0) at no cost, without improving recall or the answers measurably here, since the baseline wasn't fooled by them. In a medical system it is a **safety** gain (the wrong patient's data never reaches the LLM), worth keeping in the final configuration; `scope` must keep the notices (`patient_only` costs 5 `multi_hop` questions). Not judged.
 - [ ] 27. **§8:** pick at least two. Cheapest: removing the patient line, reranker threshold. Most instructive: contextual retrieval, parent-child. A second judge from another family (Gemma4-26B-A4B) measures the self-preference bias of the Qwen judge.
 
 ## Phase 4 — Deliverables

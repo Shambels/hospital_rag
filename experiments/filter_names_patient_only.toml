@@ -1,0 +1,34 @@
+# experiments/filter_names_patient_only.toml — §6: patient filter from the known names, notices excluded, retrieval only
+name = "filter_names_patient_only"
+
+[chunking]
+max_tokens = 512
+overlap = 0
+patient_line = true
+
+[embedder]
+model = "bge-m3"
+query_instruction = ""
+
+[search]
+method = "hybrid"          # dense, sparse or hybrid
+fusion = "rrf"             # hybrid only: rrf or dbsf
+rrf_k = 60                 # rrf only
+candidates = 30
+top_k = 5
+
+[reranker]
+model = "bge-reranker"
+
+[generation]
+enabled = false              # false: retrieval only, for experiments the deterministic metrics measure
+model = "qwen3.5-9b"        # served name (llama-server -a)
+system_prompt = "prompts/strict.txt"
+temperature = 0.0
+top_p = 1.0
+top_k = 40                  # sampling: candidate tokens at each step, not the number of chunks
+max_tokens = 512
+
+[filters]
+patient = "names"           # none, names (match known names) or llm (LLM extracts, code looks up)
+scope = "patient_only"       # patient_or_notice (keeps the drug notices) or patient_only
