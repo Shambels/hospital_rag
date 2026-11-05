@@ -8,7 +8,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 - **Phase 1:** **done.** ETL, RAG, `ask.py`, metrics (unit tests: `uv run pytest`), LLM judge, and the two experiment passes (`run_experiment.py`, `judge_experiment.py`).
 - **Phase 2:** done. Baseline = experiment 10 (run + judge), the reference of every experiment.
 - **Phase 3:** steps 21–23 done: baseline kept everywhere (chunking, retrieval parameters, temperature 0, `top_k = 5`). Step 23 corrected: its runs used an edited prompt (see step 23). Steps 24 (prompts, judge pass partly skipped), 25 (models), 26 (filters) and 27 (reranker threshold, question decomposition) done. **Phase 3 complete.**
-- **Phase 4:** next (README, RAPPORT, bonus UI).
+- **Phase 4:** README and RAPPORT done; bonus UI (step 28) not done.
 
 ## Phase 0 — Fix the setup
 
@@ -437,11 +437,14 @@ pe` and `date`.
 - [x] 29. **`README.md`:** install, `docker compose`, model servers (copy the [Services](#services) section), ingest, run, ask.
     - Sections: requirements (GPU, models folder), installation and `.env`, model servers (with which commands need which server), usage (ingest, ask, run, judge, report, tests), the experiment file reference (every key, the optional sections), the "one name = one config" rule and "never edit a used prompt", the layout, and a troubleshooting table of the problems met during the exercise.
     - Checked: every script accepts the options shown; the README's TOML example parses to exactly `baseline.toml`.
-- [ ] 30. **`RAPPORT.md`:**
+- [x] 30. **`RAPPORT.md`:**
     - a comparison table built from the §7 SQL query;
     - the best config, chosen on quality, cost and latency;
     - what changed nothing or made results worse;
     - three failures of the best config analysed: where it fails (retrieval, rerank or generation) and the fix to try.
+    - Written 5 Nov. Best configuration: **`combined_v2`** (faithfulness 1.000, correctness 0.873, 5 wrong refusals, 6/6 out_of_corpus refused, citations 100 % valid, latency ≈ 1 s), with the name filter and a restricted decomposition as next additions. The comparison table is generated from the database (46 runs, 39 configurations, grouped by section).
+    - The three failures: **Q013** (ranking: the kaliémie at rank 12; fixed by decomposition), **Q012** (retrieval of a *chained* question: the notice at rank 23, and decomposition writes « cet antibiotique »: needs iterative retrieval), **Q034** (generation: complete retrieval, faithful but incomplete answer, the 1–3 sentence rule).
+    - Plus a "lessons on measuring a RAG" section.
 
 **Tip:** commit after each module in phase 1 and after each experiment's TOML in phase 3, so the git history mirrors the experiment log.
 
