@@ -376,6 +376,51 @@ pe` and `date`.
 
 ---
 
+## How question decomposition works
+
+Option of §8 ("Décomposer la question"), measured in step 27. Code: `src/hospital_rag/rag/decompose.py`, called by `rag/pipeline.py` `retrieve()`. Off unless the experiment's TOML has:
+
+```toml
+[decomposition]
+enabled = true              # the LLM splits a question into sub-questions, one search + rerank each
+max_subquestions = 3
+```
+
+### The problem it solves
+
+A `multi_hop` question needs two facts from two different documents, e.g. « En cas d'intubation en urgence, le suxaméthonium pourrait-il être utilisé chez M. Pierre Perrin ? » needs **the patient's kaliémie** (his lab report) **and** the drug's contra-indications (the notice). The reranker scores each chunk against the *whole* question, so it favours one side: in the baseline, the notice is ranked first and the lab result is at rank 11, out of the top 5. No prompt can fix that: the fact isn't in the extracts (step 24).
+
+### The four stages
+
+1. **Decompose** (`decompose()`): one LLM call (the generator, temperature 0, JSON output) with a prompt asking for self-contained sub-questions, at most `max_subquestions`, repeating the patient's or the drug's name so each one makes sense alone. A question that needs one piece of information comes back unchanged, as a single sub-question.
+
+   ```text
+   Q013 → « Quel est l'état clinique et les antécédents de M. Pierre Perrin dans son dossier patient ? »
+          « Quelles sont les contre-indications et les précautions d'emploi du suxaméthonium selon la notice du médicament ? »
+   Q007 → « Quelle dose de ramipril prend actuellement M. Bruno Martin ? »   (unchanged: one fact)
+   ```
+
+   If the LLM's answer isn't valid JSON with a `questions` list, the original question is used: decomposition can make a search worse, never break it.
+
+2. **Search each sub-question** (`search()`): the usual hybrid search, `[search] candidates` (30) candidates per sub-question.
+
+3. **Rerank each sub-question against itself** (`rerank()`): the record's candidates are scored against the record sub-question, the notice's against the notice sub-question. This is the key difference with the baseline: no sub-question has to compete with the other for the reranker's attention.
+
+4. **Interleave** (`interleave()`): the best chunk of each sub-question in turn (1st of the first, 1st of the second, 2nd of the first…), skipping duplicates, until `[search] top_k` (5) chunks. The total stays at 5, as in the baseline, so the comparison is fair and the prompt isn't longer. Generation then gets the **original** question and these 5 chunks.
+
+With one sub-question, stages 2–3 are exactly the baseline's search and rerank, and stage 4 is skipped.
+
+### What is stored
+
+`retrieve()` returns `subquestions` (and `decompose_ms` in the timings); the runner stores a `subquestions` score (their number) for every question, so the report shows which questions were split.
+
+### Results (step 27, experiments 54 and 55)
+
+- **Target reached:** `multi_hop` recall@5 0.58 → 0.75; 4 `multi_hop` questions no prompt could answer are answered correctly (Q013, Q072, Q078, Q089).
+- **Over-splitting:** 45 of 106 questions decomposed, not only the 12 `multi_hop` ones; recall lost on 4 questions, wrong refusals unchanged in number (7) but on different questions. Q071 got two near-identical sub-questions.
+- **Cost:** one more LLM call per question; retrieval ≈ 150 → 734 ms, full answer 944 → 1697 ms (+80 %).
+- **To keep it:** split only the questions that need it (a stricter decomposition prompt, or only questions naming both a patient and a drug).
+
 ## Services
 
 ### Hardware constraint

@@ -95,6 +95,8 @@ def run_experiment(config):
                     "answer": result["answer"] if generating else None, "latency_ms": latency_ms,
                 }])
                 scores = retrieval_scores(result["chunks"], question, top_k)
+                if config.get("decomposition", {}).get("enabled", False):
+                    scores["subquestions"] = float(len(result["subquestions"]))
                 if generating:
                     scores |= answer_scores(result["answer"], result["chunks"], question)
                 db.insert_scores(conn, experiment_id, score_rows(question, scores))
