@@ -2,13 +2,13 @@
 
 Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model servers: see [Services](#services).
 
-## Status (2026-10-28)
+## Status (2026-11-05)
 
 - **Phase 0:** done.
 - **Phase 1:** **done.** ETL, RAG, `ask.py`, metrics (unit tests: `uv run pytest`), LLM judge, and the two experiment passes (`run_experiment.py`, `judge_experiment.py`).
 - **Phase 2:** done. Baseline = experiment 10 (run + judge), the reference of every experiment.
-- **Phase 3:** steps 21–23 done: baseline kept everywhere (chunking, retrieval parameters, temperature 0, `top_k = 5`). Step 23 corrected: its runs used an edited prompt (see step 23). Next: step 24 (system prompts), with a second `baseline` run to measure the noise.
-- **Phase 4:** not started.
+- **Phase 3:** steps 21–23 done: baseline kept everywhere (chunking, retrieval parameters, temperature 0, `top_k = 5`). Step 23 corrected: its runs used an edited prompt (see step 23). Steps 24 (prompts, judge pass partly skipped), 25 (models), 26 (filters) and 27 (reranker threshold, question decomposition) done. **Phase 3 complete.**
+- **Phase 4:** next (README, RAPPORT, bonus UI).
 
 ## Phase 0 — Fix the setup
 
@@ -295,7 +295,7 @@ pe` and `date`.
     - **top_k_10_gen vs prompt_patient** (its real reference): correctness 0.838 vs 0.877, faithfulness equal, relevancy 0.935 vs 0.923; 5 wrong refusals instead of 7; +20 % latency, twice the prompt. No gain in answer quality on the sample. **Kept: `top_k = 5`.** A clean re-test needs a new name (e.g. `top_k_10_strict`), the guard refuses `top_k_10_gen`.
     - `top_p` / sampling `top_k`: only matter at temperature > 0; not tested, since temperature 0 is kept.
 
-- [ ] 24. **§4 Prompts:** `minimal`, `strict`, `citations`, `patient` (each variant = `strict.txt` + one rule), at temperature 0.
+- [x] 24. **§4 Prompts:** (partly: judge pass stopped, see below) `minimal`, `strict`, `citations`, `patient` (each variant = `strict.txt` + one rule), at temperature 0.
     - Count refusals both ways: questions with an answer that were refused, and `out_of_corpus` questions that were answered.
     - Check citations without an LLM: `cited_passages()` + `judge_chunk()`.
     - Prompts (each = committed `strict.txt` with **one** change, checked with `diff`):
@@ -321,7 +321,18 @@ pe` and `date`.
       - **partial:** 7 → 3 wrong refusals, out_of_corpus still 6/6 refused. But reading the answers: only **Q017** is truly answered (« perforé… péritonite localisée », full expected answer); **Q072** gives half (current metformin dose, contrast instructions missing: retrieval); **Q012 and Q089 are refusals in other words** (« il n'est pas possible de déterminer… »), which break the prompt's own rule and that `is_refusal()` can't see. Real gain: 1 question, plus 1 half. The judge's correctness decides.
       - **minimal:** answers 4× longer, latency 2×, one answer cut at 512 tokens (Q072); its refusals never use the sentence, so 0/6 "refused" is a detection artefact.
       - Unanswerable for every prompt: Q013, Q071, Q078, Q089 (+ Q012, Q072 partly): the second fact isn't in the 5 chunks, a **retrieval** failure (`multi_hop`), for step 27 (question decomposition).
-    - [ ] Judge pass (judge): the same 4 (~26 min each) + the combination (38). `baseline` #2 has the same answers as #1, so judging it measures the **judge's own noise**, alone.
+    - [x] Judge pass, **stopped on 4 Nov** (step 24 skipped from here, to go on with step 26): judged 38, 39, 40 (26/26); `prompt_partial` (37) **15/26 only**, its judge means can't be compared with the others (`judge_experiment.py prompt_partial` completes it); `baseline` #2 (34), `prompt_citations` (36), `prompt_minimal` (35) not judged. The judge's own noise is therefore not measured.
+
+      | Run | contextual_precision | contextual_recall | faithfulness | answer_relevancy | correctness |
+      |---|---|---|---|---|---|
+      | baseline (10) | 0.876 | 0.942 | 0.881 | 0.910 | 0.850 |
+      | prompt_patient (23) | 0.876 | 0.942 | 0.942 | 0.923 | 0.877 |
+      | combined (38) | 0.867 | 0.942 | 0.965 | 0.949 | 0.881 |
+      | combined_v2 (39) | 0.867 | 0.942 | 1.000 | 0.917 | 0.873 |
+      | combined_v2_top_k_10 (40) | 0.865 | 0.923 | 0.923 | 0.906 | 0.842 |
+
+      - On the sample, the combined prompts' scores are close to the baseline and to each other; without the judge-noise measurement, gaps of a few hundredths can't be called real.
+      - Not concluded: which single prompt change helps (the single-change runs 35–37 aren't judged).
     - [x] **Combination** (requested 3 Nov): `prompts/combined.txt` = `strict.txt` + rule 2 of `partial` + the patient rule (typo « passage » fixed) + the citation rule (7 rules), with chunks **256/0**: `experiments/combined_chunks_256_overlap_0.toml`, experiment **38** (109 s). Four changes at once vs the baseline: it says whether the combination is better, not which change does it (the single-change runs 14, 23, 36, 37 do).
 
       | Run | recall@5 | nDCG@5 | out_of_corpus refused | Wrong refusals | citation_valid | citation_relevant | Median length | Median latency |
@@ -376,7 +387,7 @@ pe` and `date`.
       - **The query instruction doesn't help Qwen3 here** (recall@5 0.771 with, 0.787 without), unlike its model card's 1–5 %. Possible causes: an English instruction for French questions, or an instruction not specific enough; one wording only was tried.
       - **Qwen3-Reranker is worse overall** (recall@5 0.896, MRR 0.789, nDCG 0.783 vs 0.913 / 0.833 / 0.816; MRR better on 13 questions, worse on 20), better on `negation` (MRR 1.00) and `multi_hop` (0.62), worse on `abbreviation` (0.75). It is slower (235 ms) and 70 % bigger. It runs with the template's default instruction (« Given a web search query… »); a task-specific instruction might help, not tried.
       - **Kept: bge-m3 + bge-reranker-v2-m3** (best quality, smallest, fastest).
-    - [ ] Back to the baseline setup: bge-reranker on port 8002 (bge-m3 is already back on 8001).
+    - [x] Back to the baseline setup: bge-m3 on 8001 and bge-reranker on 8002 (used again from step 26 on).
     - Embedders: Harrier-OSS-v1-0.6b and Qwen3-Embedding-0.6B, each with its `query_instruction` and its own collection. Read the vector size from the model config.
     - Reranker: Qwen3-Reranker-0.6B with the special vLLM command (see [Services](#swap-models-for-5)).
     - Record indexing time, latency per question and GPU memory (`nvidia-smi`).
