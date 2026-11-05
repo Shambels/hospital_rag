@@ -351,7 +351,32 @@ pe` and `date`.
         - **10 chunks (39 → 40):** Q078 now answered with the expected precaution (the morphine notice was at rank 9) → 4 wrong refusals. The "5/6 out_of_corpus" is a detection artefact: Q045 is refused in other words (« Les extraits ne contiennent aucune information… »), no hallucination. `citation_relevant` drops (0.868 → 0.774): more chunks cited that aren't evidence. Latency +26 %.
         - Seen: with 5 chunks, Q045 got « Je ne sais pas. [1][5] », a citation after the refusal, against rule 6.
       - [ ] Judge pass: `uv run python scripts/judge_experiment.py combined_v2 combined_v2_top_k_10` (with the judge, ~55 min).
-- [ ] 25. **§5 Models:**
+- [x] 25. **§5 Models:** (4 Nov; the step 24 judge pass ran in parallel, the judge doesn't need the embedder or reranker)
+    - TOMLs, one change each + `enabled = false`: `embedder_qwen3`, `embedder_qwen3_no_instruction`, `embedder_harrier`, `reranker_qwen3`.
+    - Query instruction, **in English** as Qwen3's model card advises for multilingual use: « Given a question from hospital staff, retrieve the passages of patient records and drug information sheets that answer it ». `embedder_qwen3_no_instruction` measures what it is worth.
+    - Served names = folder names (`qwen3-embedding-0.6b`, `harrier-oss-v1-0.6b`): `chunk.py` loads each model's own tokenizer, so the chunks are counted in its tokens and each embedder gets its own collection.
+    - Cost reference: bge-m3 and bge-reranker-v2-m3 ≈ 1.55 GB GPU each (vLLM, fp16).
+    - Results (experiments 41–48, ~20 s each; indexes 7.2–7.3 s, **1173 chunks for every embedder**: the sections are short, the tokenizer doesn't change the cuts). Added: the same embedders **without reranker** (`no_rerank_*`), because with it every embedder gives the same result.
+
+      | Run | hit@5 | MRR@5 | recall@5 | nDCG@5 | lay_language | abbreviation | negation (MRR) | multi_hop | GPU | Retrieval ms |
+      |---|---|---|---|---|---|---|---|---|---|---|
+      | **bge-m3 + bge-reranker (baseline)** | 0.950 | **0.833** | **0.913** | **0.816** | 0.75 | 1.00 | 0.94 | 0.58 | 1.55 + 1.55 GB | ≈ 160 |
+      | qwen3-emb + instr. + bge-reranker (41) | 0.950 | 0.828 | 0.913 | 0.813 | 0.75 | 1.00 | 0.94 | 0.58 | 2.62 + 1.55 | 193 |
+      | qwen3-emb, no instr. + bge-reranker (42) | 0.950 | 0.833 | 0.913 | 0.816 | 0.75 | 1.00 | 0.94 | 0.58 | 2.62 + 1.55 | 189 |
+      | harrier + instr. + bge-reranker (45) | 0.950 | 0.833 | 0.913 | 0.814 | 0.75 | 1.00 | 0.94 | 0.58 | 2.67 + 1.55 | 199 |
+      | bge-m3 + **qwen3-reranker** (48) | 0.940 | 0.789 | 0.896 | 0.783 | 0.75 | 0.75 | **1.00** | **0.62** | 1.55 + 2.66 | 235 |
+      | bge-m3, no reranker (47) | 0.850 | **0.707** | **0.803** | **0.675** | 0.25 | **0.75** | 0.67 | 0.50 | 1.55 | 53 |
+      | qwen3-emb + instr., no reranker (43) | 0.830 | 0.685 | 0.771 | 0.668 | 0.25 | 0.38 | 0.75 | 0.42 | 2.62 | 52 |
+      | qwen3-emb, no instr., no reranker (44) | 0.850 | 0.679 | 0.787 | 0.664 | 0.38 | 0.50 | 0.75 | 0.50 | 2.62 | 53 |
+      | harrier + instr., no reranker (46) | 0.850 | 0.661 | 0.788 | 0.639 | 0.25 | 0.38 | 0.64 | 0.62 | 2.67 | 53 |
+
+    - **Conclusions:**
+      - **With the reranker, the embedder doesn't matter**: Qwen3 and Harrier give the baseline's results on all 100 questions (same lesson as the fusion in step 22: the embedder only picks the 30 candidates, the reranker re-sorts them).
+      - **Alone, bge-m3 is the best embedder** here (recall@5 0.803 vs 0.771–0.788, MRR 0.707 vs 0.66–0.69), clearly on `abbreviation` (0.75 vs 0.38–0.50), with **40 % less GPU** (1.55 vs 2.6 GB). The Qwen3 and Harrier models run in bf16; bge-m3 in fp16 with fewer parameters.
+      - **The query instruction doesn't help Qwen3 here** (recall@5 0.771 with, 0.787 without), unlike its model card's 1–5 %. Possible causes: an English instruction for French questions, or an instruction not specific enough; one wording only was tried.
+      - **Qwen3-Reranker is worse overall** (recall@5 0.896, MRR 0.789, nDCG 0.783 vs 0.913 / 0.833 / 0.816; MRR better on 13 questions, worse on 20), better on `negation` (MRR 1.00) and `multi_hop` (0.62), worse on `abbreviation` (0.75). It is slower (235 ms) and 70 % bigger. It runs with the template's default instruction (« Given a web search query… »); a task-specific instruction might help, not tried.
+      - **Kept: bge-m3 + bge-reranker-v2-m3** (best quality, smallest, fastest).
+    - [ ] Back to the baseline setup: bge-reranker on port 8002 (bge-m3 is already back on 8001).
     - Embedders: Harrier-OSS-v1-0.6b and Qwen3-Embedding-0.6B, each with its `query_instruction` and its own collection. Read the vector size from the model config.
     - Reranker: Qwen3-Reranker-0.6B with the special vLLM command (see [Services](#swap-models-for-5)).
     - Record indexing time, latency per question and GPU memory (`nvidia-smi`).

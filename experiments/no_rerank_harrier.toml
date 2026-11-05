@@ -1,0 +1,30 @@
+# experiments/no_rerank_harrier.toml — §5: embedder measured alone (no reranker), retrieval only
+name = "no_rerank_harrier"
+
+[chunking]
+max_tokens = 512
+overlap = 0
+patient_line = true
+
+[embedder]
+model = "harrier-oss-v1-0.6b"
+query_instruction = "Given a question from hospital staff, retrieve the passages of patient records and drug information sheets that answer it"
+
+[search]
+method = "hybrid"          # dense, sparse or hybrid
+fusion = "rrf"             # hybrid only: rrf or dbsf
+rrf_k = 60                 # rrf only
+candidates = 30
+top_k = 5
+
+[reranker]
+model = "none"
+
+[generation]
+enabled = false              # false: retrieval only, for experiments the deterministic metrics measure
+model = "qwen3.5-9b"        # served name (llama-server -a)
+system_prompt = "prompts/strict.txt"
+temperature = 0.0
+top_p = 1.0
+top_k = 40                  # sampling: candidate tokens at each step, not the number of chunks
+max_tokens = 512
