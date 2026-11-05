@@ -53,12 +53,27 @@ def retrieve(question, config):
     }
 
 
+REFUSAL = "Je ne sais pas."
+
+
+def below_threshold(chunks, config):
+    """[reranker] threshold (optional): True when even the best chunk is less relevant than this score."""
+    threshold = config["reranker"].get("threshold")
+    return threshold is not None and (not chunks or chunks[0].get("rerank_score", 1.0) < threshold)
+
+
 def answer(question, config):
-    """The full RAG: {answer, chunks, latency_ms, timings, prompt_tokens, completion_tokens, finish_reason}."""
+    """The full RAG: {answer, chunks, latency_ms, timings, prompt_tokens, completion_tokens, finish_reason}.
+
+    Below the reranker threshold, the LLM isn't called: nothing relevant was found, the answer is a refusal.
+    """
     result = retrieve(question, config)
 
     start = time.perf_counter()
-    generation = generate(question, result["chunks"], config)
+    if below_threshold(result["chunks"], config):
+        generation = {"answer": REFUSAL, "prompt_tokens": 0, "completion_tokens": 0, "finish_reason": "threshold"}
+    else:
+        generation = generate(question, result["chunks"], config)
     result["timings"]["generate_ms"] = elapsed_ms(start)
 
     return {
