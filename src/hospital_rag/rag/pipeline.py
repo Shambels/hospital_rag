@@ -1,6 +1,7 @@
 """The RAG: question -> chunks -> answer. Scripts, evaluation and the API call this module, never the steps directly."""
 import time
 
+from hospital_rag.rag import diversity
 from hospital_rag.rag.decompose import decompose, interleave
 from hospital_rag.rag.filters import question_filter
 from hospital_rag.rag.generate import generate
@@ -17,6 +18,7 @@ def retrieve(question, config):
 
     Enough on its own for the retrieval metrics: experiments that only change retrieval skip generation.
     With [decomposition] enabled, each sub-question gets its own search and rerank, then the rankings are interleaved.
+    With [diversity] enabled, every candidate is reranked and the diversity step chooses the top_k, after interleaving.
     patient_ipp is the patient the filter used (None: no filter); fallback is True when the filtered search found
     nothing and was run again without the filter.
     """
@@ -31,6 +33,7 @@ def retrieve(question, config):
     search_ms = rerank_ms = 0.0
     fallback = False
     rankings = []
+    diversifying = diversity.enabled(config)
     for subquestion in subquestions:
         start = time.perf_counter()
         candidates = search(subquestion, config, query_filter)
@@ -40,10 +43,15 @@ def retrieve(question, config):
         search_ms += elapsed_ms(start)
 
         start = time.perf_counter()
-        rankings.append(rerank(subquestion, candidates, config))  # each sub-question ranks its own candidates
+        # each sub-question ranks its own candidates; all of them when the diversity step chooses the top_k
+        rankings.append(rerank(subquestion, candidates, config, top_n=len(candidates) if diversifying else None))
         rerank_ms += elapsed_ms(start)
 
-    chunks = rankings[0] if len(rankings) == 1 else interleave(rankings, config["search"]["top_k"])
+    if diversifying:
+        merged = rankings[0] if len(rankings) == 1 else interleave(rankings, sum(map(len, rankings)))
+        chunks = diversity.diversify(merged, config)
+    else:  # unchanged: the rankings are already cut at top_k
+        chunks = rankings[0] if len(rankings) == 1 else interleave(rankings, config["search"]["top_k"])
     return {
         "chunks": chunks,
         "patient_ipp": patient_ipp,

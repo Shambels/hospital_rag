@@ -14,10 +14,13 @@ def get_session():
     return requests.Session()
 
 
-def rerank(question, chunks, config):
-    """The top_k chunks the reranker finds most relevant, best first, each with its rerank_score added."""
+def rerank(question, chunks, config, top_n=None):
+    """The top_n chunks (default [search] top_k) the reranker finds most relevant, best first, with their rerank_score.
+
+    top_n = len(chunks) ranks every candidate, for a diversity step that chooses the top_k itself (rag/diversity.py).
+    """
     model = config["reranker"]["model"]
-    top_k = config["search"]["top_k"]
+    top_k = top_n or config["search"]["top_k"]
     if model == NO_RERANKER or not chunks:
         return chunks[:top_k]
 

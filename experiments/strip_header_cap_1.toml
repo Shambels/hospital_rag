@@ -1,0 +1,35 @@
+# experiments/strip_header_cap_1.toml — dedup step 3: strip_header + at most 1 chunk(s) per document in the top 5
+name = "strip_header_cap_1"
+
+[chunking]
+max_tokens = 512
+overlap = 0
+patient_line = true
+strip_header = true         # drop the documents' header chunks (hospital, identity, date, author, disclaimer)
+
+[embedder]
+model = "bge-m3"
+query_instruction = ""
+
+[search]
+method = "hybrid"          # dense, sparse or hybrid
+fusion = "rrf"             # hybrid only: rrf or dbsf
+rrf_k = 60                 # rrf only
+candidates = 30
+top_k = 5
+
+[reranker]
+model = "bge-reranker"
+
+[generation]
+enabled = false              # false: retrieval only, for experiments the deterministic metrics measure
+model = "qwen3.5-9b"        # served name (llama-server -a)
+system_prompt = "prompts/strict.txt"
+temperature = 0.0
+top_p = 1.0
+top_k = 40                  # sampling: candidate tokens at each step, not the number of chunks
+max_tokens = 512
+
+[diversity]
+method = "cap"              # after the reranker: skip the chunks of a document that already has its share
+max_per_document = 1

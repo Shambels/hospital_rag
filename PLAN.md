@@ -9,7 +9,7 @@ Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model s
 - **Phase 2:** done. Baseline = experiment 10 (run + judge), the reference of every experiment.
 - **Phase 3:** steps 21–23 done: baseline kept everywhere (chunking, retrieval parameters, temperature 0, `top_k = 5`). Step 23 corrected: its runs used an edited prompt (see step 23). Steps 24 (prompts, judge pass partly skipped), 25 (models), 26 (filters) and 27 (reranker threshold, question decomposition) done. **Phase 3 complete.**
 - **Phase 4:** done: README, RAPPORT and the bonus UI. **Every step of the plan is done.**
-- **Beyond the plan:** deduplication (`deduplicate_plan.md`, steps 1–2 done: header removal, now in the recommended `combined_v2_strip_header`); gated decomposition implemented, its run pending (see [Gated decomposition](#gated-decomposition)).
+- **Beyond the plan:** deduplication (`deduplicate_plan.md`, steps 1–2 done: header removal, now in the recommended `combined_v2_strip_header`); gated decomposition run 62: 1 wrong refusal, the fewest of the exercise, at 1.3 s; judge pass pending (see [Gated decomposition](#gated-decomposition)).
 
 ## Phase 0 — Fix the setup
 
@@ -450,7 +450,8 @@ pe` and `date`.
     - [x] **Deduplication, step 1** (5 Nov): redundancy metrics `redundancy@k`, `near_duplicates@k`, `documents@k` (Jaccard on chunk bodies, within one patient or notice), computed for every new run and for the 47 stored ones (`scripts/rescore.py --all`). Main finding: the near-duplicates are **header chunks** (Q005: 4 of its 5 chunks are the patient's headers), so boilerplate removal is next. Details: `deduplicate_plan.md`, *Step 1 results*.
     - [x] **Deduplication, step 2** (5 Nov): `[chunking] strip_header = true` drops each document's header chunks (structural rule: title-only heading and only header lines; line frequency would have deleted « Pas d'allergie médicamenteuse connue », found in 18.6 % of documents). Run **57** (retrieval only): recall@5 0.913 → **0.943**, hit@5 0.950 → **0.990**, MRR 0.833 → 0.843, redundancy@5 0.051 → 0.007; 4 questions better (Q013, Q078, Q088, Q106), 0 worse; 24 % fewer chunks. Details: `deduplicate_plan.md`, *Step 2 results*.
     - [x] **Deduplication, step 2 with generation + judge** (5 Nov): `strip_header` on the three references, runs **59** (vs baseline 10), **60** (`combined_v2_strip_header`, vs 39), **61** (`combined_v2_decomposition_strip_header`, vs 56). Retrieval gain identical everywhere (recall@5 → 0.943, hit@5 → 0.990, redundancy@5 → 0.007); judge scores within noise (correctness 0.842 / **0.881** / 0.873; the baseline's faithfulness +0.10 is answer-wording noise, same chunks). Wrong refusals 7 → 6, 5 → **3**, 3 → **2**. **`combined_v2_strip_header` matches `combined_v2_decomposition`** (correctness 0.881, 3 wrong refusals) **at 1.0 s instead of 1.8 s**: new best trade-off. Decomposition still needed only for the chained questions (Q072, Q089); Q071 fails everywhere. Details: `deduplicate_plan.md`, *Step 2 with generation and the judge*.
-    - [ ] **Gated decomposition** (6 Nov): `[decomposition] gate = true`, a yes/no LLM call before the split: decompose only the questions that need a patient's record **and** a drug notice. Experiment `combined_v2_gated_decomposition_strip_header` (= run 61's config + `gate = true`), to compare with **60** (never split) and **61** (always split). Implemented, 4 tests (46 in total); the sub-question texts are now stored (the `reason` of the `subquestions` score). How it works: [Gated decomposition](#gated-decomposition). **Run pending** (needs the generator).
+    - [x] **Gated decomposition** (6 Nov): `[decomposition] gate = true`, a yes/no LLM call before the split: decompose only the questions that need a patient's record **and** a drug notice. Experiment `combined_v2_gated_decomposition_strip_header` (= run 61's config + `gate = true`), to compare with **60** (never split) and **61** (always split). Implemented, 4 tests (46 in total); the sub-question texts are now stored (the `reason` of the `subquestions` score). How it works: [Gated decomposition](#gated-decomposition). Run **62**: split 15 questions instead of 45 (all 12 `multi_hop` + 3 `dose`), recall@5 **0.953** and hit@5 **1.000** (best of the exercise), wrong refusals **1** (Q071 only; 60: 3, 61: 2), median latency **1305 ms** (60: 1003, 61: 1799). Keeps run 61's gains (Q013, Q037, Q072, Q089) and run 60's (Q052, Q067, MRR on temporal questions); still loses Q086 and Q090 (chained sub-questions). Judge pass pending.
+    - [ ] **Deduplication, step 3: cap per document** (6 Nov): `[diversity] method = "cap"`, `max_per_document` (`rag/diversity.py`, after the reranker and after the interleaving; never fewer than `top_k` chunks). 5 tests (51 in total). Experiments `strip_header_cap_2` and `strip_header_cap_1` (retrieval only, vs run 57); cap 1 included because the failures it targets (Q052, Q080) had exactly 2 chunks of one notice. **Runs pending.** Details: `deduplicate_plan.md`, *Step 3: preparation*.
 
 ## Phase 4 — Deliverables
 
@@ -550,6 +551,27 @@ question ──► gate: « faut-il combiner le dossier d'un patient ET la notic
 **What to expect** (to check against the run): the "yes" questions should be close to the `multi_hop` ones; Q052, Q067 and the dose / temporal / negation questions kept whole, as in run 60; Q072 and Q089 still split and answered, as in run 61; median latency between 1.0 and 1.8 s. Q086 and Q090 *are* two-source questions: the gate should let them through and they may keep run 61's loss, which would point at the interleaving, not at the gate.
 
 **Limit of the measure**: the gate's criterion was written after reading the failures of these 106 questions, so the result is optimistic; the generic wording (two kinds of documents, no question copied) limits that, but a held-out set of questions would be needed to measure it fairly.
+
+**Results (run 62, retrieval and refusals on 100 / 106 questions; judge pending):**
+
+| | 60: never split | 61: always split | **62: gated** |
+|---|---|---|---|
+| questions split | 0 | 45 | **15** |
+| hit@5 / recall@5 | 0.990 / 0.943 | 0.990 / 0.942 | **1.000 / 0.953** |
+| MRR@5 / nDCG@5 | 0.844 / 0.827 | 0.817 / 0.810 | **0.849 / 0.832** |
+| wrong refusals | 3 (Q071, Q072, Q089) | 2 (Q052, Q071) | **1** (Q071) |
+| out_of_corpus refused | 6/6 | 6/6 | 6/6 |
+| citations valid / relevant | 1.000 / 0.860 | 1.000 / 0.874 | 1.000 / 0.870 |
+| median / mean latency | **1003** / 1042 ms | 1799 / 1830 ms | 1305 / 1502 ms |
+
+- **The gate's decisions**: "yes" for **all 12** `multi_hop` questions (no question that needs two sources is missed), and for 3 others, all `dose` questions (Q021, Q080, Q095: « la posologie de metformine prescrite à… », read as needing the notice). Precision 12/15, recall 12/12. Every `temporal`, `negation`, `cross_*` question kept whole.
+- **vs run 61 (always split)**: the over-splitting losses are gone: **Q052** answered again (recall 0.0 → 1.0, no longer refused), **Q067** recall 0.67 → 1.0, and the MRR of Q008, Q081, Q097, Q105 back to 1.0. Lost: Q092 (`cross_notice`, recall 1.0 → 0.8, as in run 60: the gate keeps notice-only questions whole).
+- **vs run 60 (never split)**: Q013 (recall 0.5 → 1.0, answered with the hyperkalaemia), Q037 (0.0 → 0.5), **Q072 and Q089 answered** instead of refused, Q078 MRR 0.2 → 0.5. Lost: **Q086, Q090** (1.0 → 0.5), as expected.
+- **Why Q086 and Q090 still fail: chained sub-questions, not the gate.** Their second sub-question doesn't name the drug: « Quel est le délai d'arrêt de **l'anticoagulant de M. Robert Sanchez** avant une rachianesthésie ? », « Quels sont les effets indésirables les plus fréquents de **cet antalgique** ? ». Searched alone, it can't reach the right notice (Q086: the bupivacaine notice instead of apixaban's; Q090: no tramadol notice), while the whole question, searched once in run 60, had found both. Same cause as Q012 (« cet antibiotique ») and Q071 (two near-identical sub-questions on « la corticothérapie »).
+- **The cost of a wrong "yes"**: Q080's split brought two metformin notice chunks, which pushed out the consultation of 12/04/2026 with the current dose; the answer gives the old one (« 500 mg matin et soir »), as in run 61, where run 60 was right. Recall doesn't see it (the evidence chunk is still there).
+- **Latency**: the median rises by 0.3 s (the gate's call on every question), the mean by 0.46 s (the 15 split questions pay gate + decomposition + a second search). Between 60 and 61, as expected.
+
+**Next**: the judge pass on run 62; then, for the chained sub-questions (Q012, Q071, Q086, Q090), either keep the whole question's ranking first in the interleaving (what was found without splitting can't be lost), or iterative retrieval (answer the first sub-question, put the drug's name into the second).
 
 **Stored**: the gate's prompt in the experiment's config (`decomposition.gate_prompt_text`, so the guard catches an edit of it), and, for every decomposed run, the sub-question texts as the `reason` of the `subquestions` score (`… | …`): one sub-question means the question was kept whole.
 

@@ -1,6 +1,6 @@
 # Plan — avoiding redundant chunks
 
-How Jaccard similarity, MinHash + LSH and Maximal Marginal Relevance (MMR) would apply to this RAG, what else to consider, and in which order to try them. Nothing here is implemented yet; each step below is one experiment, compared with `combined_v2` (or `baseline`) with one change at a time, as in `PLAN.md`.
+How Jaccard similarity, MinHash + LSH and Maximal Marginal Relevance (MMR) would apply to this RAG, what else to consider, and in which order to try them. Each step below is one experiment, compared with one change at a time, as in `PLAN.md`. Done: steps 1 (redundancy metrics) and 2 (header removal, kept everywhere); step 3 prepared.
 
 ## The three techniques, and when they act
 
@@ -96,7 +96,7 @@ Each step is one change, measured with the deterministic metrics on 100 question
 
 1. ✅ **The `redundancy@5` and `documents@5` metrics**, recomputed on the stored runs: they tell which configurations are redundant today (expected: the overlap ones, `top_k_10`, decomposition). **Done (5 Nov)**, see *Step 1 results* below.
 2. ✅ **Boilerplate removal at indexing**: done as **header removal** (`strip_header`), not by line frequency: see *Step 2 results*, and *Step 2 with generation and the judge* (kept on every configuration).
-3. **Cap per document** (2 per document): the simple baseline for diversity.
+3. **Cap per document** (2, then 1 per document): the simple baseline for diversity. **Prepared (6 Nov)**, see *Step 3: preparation*.
 4. **MMR after the reranker**, Jaccard on the bodies, λ = 0.7 and 0.5 (`mmr_lambda_0.7`, `mmr_lambda_0.5`): compared with step 3 on `cross_notice`, `cross_patient`, `multi_hop` (recall@5) and on `temporal`, `dose` (no loss allowed).
 5. **MinHash + LSH**, as a demonstration: same pairs as exact Jaccard on the 1173 chunks? Then used for the index-time deduplication if the corpus were to grow.
 6. The best of 2–4 with generation and the judge, on top of the best configuration (`combined_v2_decomposition`, or `combined_v2` if latency matters).
@@ -190,4 +190,29 @@ The same option (`strip_header = true`, one line added) on the three references,
 2. **It halves the case for decomposition.** `combined_v2_strip_header` has the correctness of `combined_v2_decomposition` (0.881), the same number of wrong refusals (3), faithfulness 0.987, at **1.0 s instead of 1.8 s**. What decomposition still adds is the chained questions (Q072, Q089), and it still over-splits Q052.
 3. **New best trade-off: `combined_v2_strip_header`.** On quality alone, `combined_v2_decomposition_strip_header` is ahead (2 wrong refusals, answer relevancy 0.962), at +80 % latency.
 
-**Next**: steps 3–4 (per-document cap, MMR) have little redundancy left to act on (near_duplicates@5 0.028: 3 chunks over 106 questions); they remain worth one retrieval-only run each, on top of `strip_header`, for `cross_*` diversity rather than for duplicates. The bigger remaining lever is the chained `multi_hop` questions, i.e. a decomposition that only triggers when the question needs a second fact (RAPPORT, *Improvements*).
+**Next** (written before the gated decomposition): steps 3–4 (per-document cap, MMR) have little redundancy left to act on (near_duplicates@5 0.028: 3 chunks over 106 questions); they remain worth one retrieval-only run each, on top of `strip_header`, for `cross_*` diversity rather than for duplicates. The bigger remaining lever is the chained `multi_hop` questions, i.e. a decomposition that only triggers when the question needs a second fact (RAPPORT, *Improvements*).
+
+## Step 3: preparation (6 Nov)
+
+**Implemented**: `rag/diversity.py` and an optional section, off when absent (every existing configuration is unchanged):
+
+```toml
+[diversity]
+method = "cap"              # none (default) or cap
+max_per_document = 2
+```
+
+- **Where**: after the reranker, in `pipeline.retrieve()`. With `[diversity]`, `rerank()` returns **every** candidate ranked (`top_n = 30` instead of 5: the reranker scores all 30 anyway, so it costs nothing), and `cap_per_document()` walks down that ranking, skipping a chunk whose document already has `max_per_document` chunks, until 5. With decomposition, the cap applies to the interleaved order (after `interleave()`), so two sub-questions can't fill the top 5 with one document between them.
+- **Never fewer chunks**: if the cap leaves fewer than 5 (every candidate from one or two documents), the skipped chunks fill the gap in ranked order.
+- 5 tests (`tests/test_diversity.py`, 51 in total). Checked on 10 questions: without `[diversity]`, the chunks are identical to run 57's.
+
+**What the stored runs say before running it**: the cap at 2 acts only when one document holds 3 or more of the 5 chunks. That happens on 21 questions in run 57 (26 in run 60), mostly `imaging`, `buried`, `abbreviation`, `lay_language`: questions answered by **one** report, whose several sections are legitimately the evidence (Q003, Q014, Q044: 3 chunks of one imaging report). And the two failures that motivated this step had **exactly 2** chunks of one notice (Q052 in run 61: ramipril; Q080 in run 62: metformin): a cap at 2 doesn't touch them, only a cap at 1 does.
+
+**So two experiments**, each `strip_header` + `[diversity]` (retrieval only, ≈ 20 s, embedder + reranker; compared with run **57**):
+
+| Experiment | max_per_document | Expected |
+|---|---|---|
+| `strip_header_cap_2` | 2 | few changes; watch `imaging` and `buried` (one-report questions) for losses, `cross_*` for gains |
+| `strip_header_cap_1` | 1 | 5 distinct documents per question; gains on lists (`cross_notice`, `cross_patient`), losses likely on `split` and `buried` (an answer spread over two sections of one document) |
+
+Metrics: recall@5 and MRR@5 by type, `documents@5` (should rise to ≤ 5), and the questions improved / degraded. The Q052 / Q080 effect needs decomposition, hence the generator: if the cap at 1 doesn't cost too much on its own, one run of the gated configuration + cap 1, with generation.
