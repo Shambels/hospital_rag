@@ -186,7 +186,7 @@ max_tokens = 512
 
 # Optional sections, off when absent:
 # [filters]        patient = "names" | "llm", scope = "patient_or_notice" | "patient_only"
-# [decomposition]  enabled = true, max_subquestions = 3
+# [decomposition]  enabled = true, max_subquestions = 3, gate = true (split only record + notice questions)
 ```
 
 **A name always means one configuration.** The runner refuses a run whose name already ran with another config, prompt *text* included (the prompt text is stored with each experiment). So: **never edit a prompt file once it has run**: copy it to a new file (`combined.txt` → `combined_v2.txt`), and give the experiment a new name.

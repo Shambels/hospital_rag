@@ -12,6 +12,7 @@ from hospital_rag import db
 from hospital_rag.config import settings
 from hospital_rag.etl.index import index_corpus
 from hospital_rag.evaluation.metrics import answer_scores, filter_scores, redundancy_scores, retrieval_scores
+from hospital_rag.rag.decompose import GATE_PROMPT
 from hospital_rag.rag.generate import load_system_prompt
 from hospital_rag.rag.pipeline import answer, retrieve
 
@@ -30,6 +31,8 @@ def stored_config(config):
     stored = copy.deepcopy(config)
     if config["generation"]["enabled"]:
         stored["generation"]["system_prompt_text"] = load_system_prompt(config)
+    if config.get("decomposition", {}).get("gate", False):
+        stored["decomposition"]["gate_prompt_text"] = GATE_PROMPT  # the gate's prompt is in the code: store it too
     return stored
 
 
@@ -97,7 +100,8 @@ def run_experiment(config):
                 scores = retrieval_scores(result["chunks"], question, top_k)
                 scores |= redundancy_scores(result["chunks"], top_k)
                 if config.get("decomposition", {}).get("enabled", False):
-                    scores["subquestions"] = float(len(result["subquestions"]))
+                    # the texts as the reason: they explain a split that lost its evidence (Q052)
+                    scores["subquestions"] = (float(len(result["subquestions"])), " | ".join(result["subquestions"]))
                 if config.get("filters", {}).get("patient", "none") != "none":
                     scores |= filter_scores(result["patient_ipp"], question, result["fallback"])
                 if generating:

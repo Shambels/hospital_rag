@@ -2,13 +2,14 @@
 
 Steps in order, based on `exercice_03_recap_enonce.md`. How to start the model servers: see [Services](#services).
 
-## Status (2026-11-05)
+## Status (2026-11-06)
 
 - **Phase 0:** done.
 - **Phase 1:** **done.** ETL, RAG, `ask.py`, metrics (unit tests: `uv run pytest`), LLM judge, and the two experiment passes (`run_experiment.py`, `judge_experiment.py`).
 - **Phase 2:** done. Baseline = experiment 10 (run + judge), the reference of every experiment.
 - **Phase 3:** steps 21–23 done: baseline kept everywhere (chunking, retrieval parameters, temperature 0, `top_k = 5`). Step 23 corrected: its runs used an edited prompt (see step 23). Steps 24 (prompts, judge pass partly skipped), 25 (models), 26 (filters) and 27 (reranker threshold, question decomposition) done. **Phase 3 complete.**
 - **Phase 4:** done: README, RAPPORT and the bonus UI. **Every step of the plan is done.**
+- **Beyond the plan:** deduplication (`deduplicate_plan.md`, steps 1–2 done: header removal, now in the recommended `combined_v2_strip_header`); gated decomposition implemented, its run pending (see [Gated decomposition](#gated-decomposition)).
 
 ## Phase 0 — Fix the setup
 
@@ -449,6 +450,7 @@ pe` and `date`.
     - [x] **Deduplication, step 1** (5 Nov): redundancy metrics `redundancy@k`, `near_duplicates@k`, `documents@k` (Jaccard on chunk bodies, within one patient or notice), computed for every new run and for the 47 stored ones (`scripts/rescore.py --all`). Main finding: the near-duplicates are **header chunks** (Q005: 4 of its 5 chunks are the patient's headers), so boilerplate removal is next. Details: `deduplicate_plan.md`, *Step 1 results*.
     - [x] **Deduplication, step 2** (5 Nov): `[chunking] strip_header = true` drops each document's header chunks (structural rule: title-only heading and only header lines; line frequency would have deleted « Pas d'allergie médicamenteuse connue », found in 18.6 % of documents). Run **57** (retrieval only): recall@5 0.913 → **0.943**, hit@5 0.950 → **0.990**, MRR 0.833 → 0.843, redundancy@5 0.051 → 0.007; 4 questions better (Q013, Q078, Q088, Q106), 0 worse; 24 % fewer chunks. Details: `deduplicate_plan.md`, *Step 2 results*.
     - [x] **Deduplication, step 2 with generation + judge** (5 Nov): `strip_header` on the three references, runs **59** (vs baseline 10), **60** (`combined_v2_strip_header`, vs 39), **61** (`combined_v2_decomposition_strip_header`, vs 56). Retrieval gain identical everywhere (recall@5 → 0.943, hit@5 → 0.990, redundancy@5 → 0.007); judge scores within noise (correctness 0.842 / **0.881** / 0.873; the baseline's faithfulness +0.10 is answer-wording noise, same chunks). Wrong refusals 7 → 6, 5 → **3**, 3 → **2**. **`combined_v2_strip_header` matches `combined_v2_decomposition`** (correctness 0.881, 3 wrong refusals) **at 1.0 s instead of 1.8 s**: new best trade-off. Decomposition still needed only for the chained questions (Q072, Q089); Q071 fails everywhere. Details: `deduplicate_plan.md`, *Step 2 with generation and the judge*.
+    - [ ] **Gated decomposition** (6 Nov): `[decomposition] gate = true`, a yes/no LLM call before the split: decompose only the questions that need a patient's record **and** a drug notice. Experiment `combined_v2_gated_decomposition_strip_header` (= run 61's config + `gate = true`), to compare with **60** (never split) and **61** (always split). Implemented, 4 tests (46 in total); the sub-question texts are now stored (the `reason` of the `subquestions` score). How it works: [Gated decomposition](#gated-decomposition). **Run pending** (needs the generator).
 
 ## Phase 4 — Deliverables
 
@@ -519,6 +521,37 @@ With one sub-question, stages 2–3 are exactly the baseline's search and rerank
 - **Over-splitting:** 45 of 106 questions decomposed, not only the 12 `multi_hop` ones; recall lost on 4 questions, wrong refusals unchanged in number (7) but on different questions. Q071 got two near-identical sub-questions.
 - **Cost:** one more LLM call per question; retrieval ≈ 150 → 734 ms, full answer 944 → 1697 ms (+80 %).
 - **To keep it:** split only the questions that need it (a stricter decomposition prompt, or only questions naming both a patient and a drug).
+
+### Gated decomposition
+
+Option `[decomposition] gate = true` (off by default), code in `rag/decompose.py`: `GATE_PROMPT`, `needs_two_sources()`.
+
+**Why.** With header removal, the single search already answers most `multi_hop` questions (run 60). Of the 45 questions run 61 splits, only 5 gain (Q013, Q037, Q072, Q089, Q092) and 4 lose (Q052, Q067, Q086, Q090); the other 36 are split for nothing, at +0.8 s each. The decomposition prompt splits any question naming a patient *and* a drug: « Quelle est la posologie de metformine prescrite à Mme Sophie Muller ? » is split, though the dose is in her prescription. And splitting is not free even when the sub-questions are good: the interleaving gives each sub-question its share of the 5 places, so a one-source question loses places its evidence held (Q052: the chunk with the reason was pushed out by two notice chunks).
+
+**The criterion: a second *kind* of source.** The corpus has two kinds of documents, patient records and drug notices; a question needs a second fact, in the sense that matters for retrieval, when that fact is in the other kind of document: what the patient has or takes (record) + what is true of the drug (notice: contraindication, interaction, side effects, monitoring, precautions). Everything about one patient's history (a dose, a date, a result, *why* a dose was changed) is one kind; questions on notices only, or on several patients, too.
+
+**How it works**: one more stage before decomposition.
+
+```text
+question ──► gate: « faut-il combiner le dossier d'un patient ET la notice d'un médicament ? »
+               │ {"deux_sources": false}  (or unusable answer)
+               ├──────────────► one search + rerank on the whole question  (= run 60)
+               │ {"deux_sources": true}
+               └──► decompose (unchanged prompt) ──► one search + rerank per sub-question ──► interleave  (= run 61)
+```
+
+1. **The gate** asks the generator a yes/no question, as JSON (`{"deux_sources": true|false}`), at temperature 0 with `max_tokens = 20`. The prompt describes the two kinds of documents, then what counts as yes (whether a drug suits this patient given his condition or treatment; the side effects, monitoring or precautions of a drug he receives) and as no (everything in the record, including the reason for a change; everything in the notices).
+2. **No** → `[question]`: exactly the single search of `combined_v2_strip_header`. The decomposition LLM call is skipped.
+3. **Yes** → the existing decomposition, prompt unchanged: **one change per experiment**, the gate decides *whether* to split, not *how*.
+4. **Unusable answer** (not the JSON asked for) → no split: the whole question is the safe default, the best configuration without decomposition.
+
+**Why a separate call, not a stricter decomposition prompt.** A stricter prompt would mix two changes (when to split and how) and the model would still write its sub-questions for every question: the gate's answer is ≈ 8 tokens instead of 30–80, and generating tokens is what costs (prompt evaluation is much faster per token), so a "no" should cost a fraction of a decomposition. (llama-server's prompt cache doesn't help here: with `-np 1` there is one slot, and each question's generation call replaces the gate's prompt in it.) A deterministic rule (the question names a patient + a drug word) was ruled out by the table above: Q052 (« la dose de ramipril de M. Pierre Perrin ») and Q089 (« ajouter du ramipril » for Mme Nathalie Girard) name the same kinds of things; only *what is asked* separates them, which needs a language model.
+
+**What to expect** (to check against the run): the "yes" questions should be close to the `multi_hop` ones; Q052, Q067 and the dose / temporal / negation questions kept whole, as in run 60; Q072 and Q089 still split and answered, as in run 61; median latency between 1.0 and 1.8 s. Q086 and Q090 *are* two-source questions: the gate should let them through and they may keep run 61's loss, which would point at the interleaving, not at the gate.
+
+**Limit of the measure**: the gate's criterion was written after reading the failures of these 106 questions, so the result is optimistic; the generic wording (two kinds of documents, no question copied) limits that, but a held-out set of questions would be needed to measure it fairly.
+
+**Stored**: the gate's prompt in the experiment's config (`decomposition.gate_prompt_text`, so the guard catches an edit of it), and, for every decomposed run, the sub-question texts as the `reason` of the `subquestions` score (`… | …`): one sub-question means the question was kept whole.
 
 ## Services
 

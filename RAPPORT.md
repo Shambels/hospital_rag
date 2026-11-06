@@ -123,7 +123,7 @@ The judge's differences between the last three columns (±0.01 on correctness) a
 **What it doesn't fix, or breaks:** decomposition splits 45 of the 106 questions, not only the 12 `multi_hop` ones, and some lose their evidence: Q052 (`temporal`, recall 1.0 → 0.0, now refused), Q086 and Q090 (recall 1.0 → 0.5); Q017 and Q020 lose correctness. Q071 and Q012 stay refused (see the failures below).
 
 **Recommended next additions** (each measured on its own, not yet together with this configuration):
-- **split only the questions that need it** (a gate before decomposition): it would keep the chained-question gains (Q072, Q089) without the Q052 / Q086 / Q090 regressions, and pay the extra latency only on the questions split (`PLAN.md`, step 29);
+- **split only the questions that need it** (a gate before decomposition): it would keep the chained-question gains (Q072, Q089) without the Q052 / Q086 / Q090 regressions, and pay the extra latency only on the questions split (`PLAN.md`, *Gated decomposition*);
 - the **patient filter by name matching** (`[filters] patient = "names"`): free (no LLM, < 1 ms, 106/106 patients right), it removes the 10 % of chunks that belong to another patient: no measured gain in the answers, but in a medical system the wrong patient's data should never reach the LLM;
 - **fewer redundant chunks** beyond the headers (per-document cap, MMR): little left to remove (near_duplicates@5 0.028, 3 chunks over 106 questions), see `deduplicate_plan.md`.
 
