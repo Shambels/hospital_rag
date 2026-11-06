@@ -1,13 +1,14 @@
 # Rapport — Exercice 3 : industrialiser et optimiser le RAG
 
-The RAG of the Centre Hospitalier de Valmont, moved out of the notebooks into a Python application (`src/hospital_rag/`), then used to measure, one change at a time, the optimisations of sections 2 to 8 of the exercise. 47 runs of 40 configurations are stored in PostgreSQL with their full configuration and their scores, question by question. The step-by-step log, with every intermediate result, is `PLAN.md`; how to reproduce everything is `README.md`.
+The RAG of the Centre Hospitalier de Valmont, moved out of the notebooks into a Python application (`src/hospital_rag/`), then used to measure, one change at a time, the optimisations of sections 2 to 8 of the exercise. 51 runs of 44 configurations are stored in PostgreSQL with their full configuration and their scores, question by question. The step-by-step log, with every intermediate result, is `PLAN.md`; how to reproduce everything is `README.md`.
 
 ## Summary
 
-- **Best configuration on quality: `combined_v2_decomposition`**: the baseline's models and retrieval, a system prompt combining four rules (partial answers allowed, the patient's extracts first, a citation after each fact), and question decomposition. Correctness **0.881**, answer relevancy **0.936**, faithfulness **0.987** on the judge's sample (baseline 0.850 / 0.910 / 0.881), **3** wrong refusals instead of 7, every out-of-corpus question still refused, citations that always point to an existing extract. It costs **+80 % latency** (1.8 s).
-- **Best configuration on cost: `combined_v2`**, the same without decomposition: faithfulness **1.000**, correctness 0.873, 5 wrong refusals, at the baseline's latency (≈ 1 s).
+- **Recommended configuration: `combined_v2_strip_header`**: the baseline's models and retrieval, the documents' header chunks dropped at indexing (`strip_header`), and a system prompt combining four rules (partial answers allowed, the patient's extracts first, a citation after each fact). Recall@5 **0.943** and hit@5 **0.990** (baseline 0.913 / 0.950), correctness **0.881**, faithfulness **0.987** on the judge's sample (baseline 0.850 / 0.881), **3** wrong refusals instead of 7, every out-of-corpus question still refused, citations that always point to an existing extract, **at the baseline's latency** (1.0 s).
+- **Best on quality, at +80 % latency: `combined_v2_decomposition_strip_header`**, the same plus question decomposition: **2** wrong refusals, answer relevancy **0.962**, correctness 0.873; it is the only configuration answering the *chained* questions Q072 and Q089. Decomposition without header removal (`combined_v2_decomposition`) reached the same correctness (0.881) and 3 wrong refusals at 1.8 s: removing the headers gives most of what decomposition gave, for free.
+- **The largest gain of the exercise is a cleaning step, not a model**: the header chunks (hospital, identity, date, disclaimer) matched every question naming a patient on the name alone and took places in the top 5; dropping them (24 % fewer chunks) is the only change that improved retrieval *behind* the reranker, on every configuration.
 - **Most retrieval settings change nothing at the end of the pipeline**: the reranker re-sorts 30 candidates that always contain the relevant chunks (hit@30 = 1.00), so the fusion method, its `k`, the embedder and the number of candidates above 30 are all invisible.
-- **The remaining failures** are a chained question decomposition can't split (Q012), questions decomposition over-splits (Q052, Q086, Q090), and terse answers (Q034).
+- **The remaining failures** are chained questions (the drug isn't named: Q012, Q071, and Q072 / Q089 without decomposition), questions decomposition over-splits (Q052, Q086, Q090), and terse answers (Q034).
 - **Measurement matters as much as optimisation**: three findings of this work are about the measures themselves (the reranker hides upstream changes, the refusal metric can be fooled by wording, temperature 0 is not reproducible with llama-server).
 
 ## Method
@@ -70,48 +71,61 @@ Retrieval metrics on 100 questions, refusals on 106, judge on 26 (only for fully
 | `reranker_threshold_0.05` | 1 | 0.950 | 0.833 | 0.913 | 0.816 | 6/6 | 7 | – | – | 949 ms |
 | `decomposition` | 1 | 0.970 | 0.811 | 0.922 | 0.802 | – | – | – | – | 734 ms (retrieval) |
 | `decomposition_gen` | 1 | 0.970 | 0.811 | 0.922 | 0.802 | 6/6 | 7 | 0.920 | 0.877 | 1697 ms |
-| **`combined_v2_decomposition`** | 1 | 0.970 | 0.813 | 0.922 | 0.802 | 6/6 | 3 | 0.987 | 0.881 | 1785 ms |
+| `combined_v2_decomposition` | 1 | 0.970 | 0.813 | 0.922 | 0.802 | 6/6 | 3 | 0.987 | 0.881 | 1785 ms |
+| **Deduplication (`deduplicate_plan.md`): header chunks dropped** | | | | | | | | | | |
+| `strip_header` | 1 | **0.990** | 0.843 | **0.943** | **0.828** | – | – | – | – | 159 ms (retrieval) |
+| `strip_header_gen` | 1 | 0.990 | 0.843 | 0.943 | 0.828 | 6/6 | 6 | 0.978 | 0.842 | 970 ms |
+| **`combined_v2_strip_header`** | 1 | 0.990 | 0.844 | 0.943 | 0.827 | 6/6 | 3 | 0.987 | 0.881 | 1003 ms |
+| **`combined_v2_decomposition_strip_header`** | 1 | 0.990 | 0.817 | 0.942 | 0.810 | 6/6 | **2** | 0.974 | 0.873 | 1799 ms |
 
 Notes on the table:
 - **`prompt_minimal` "0/6"** and **`combined_v2_top_k_10` "5/6"** are detection artefacts: these answers refuse in other words (« il n'est pas possible de déterminer… », « Les extraits ne contiennent aucune information… »); refusals are only counted when the answer contains « Je ne sais pas ». `prompt_partial`'s "3" is partly the same artefact (2 of its 4 "answers" are refusals in other words).
 - **§3 generation runs** (`prompt_patient`, temperatures, `top_k_10_gen`) used an uncommitted edit of `strict.txt` adding a patient rule; their reference is `prompt_patient`, not `baseline` (`PLAN.md` step 23).
 - **`top_k_3`**: only @3 metrics: recall@3 0.856 (baseline recall@5 0.913).
+- **`strip_header_gen`'s faithfulness** (0.978 vs 0.881) is not the option: on the questions that moved (Q003, Q015, Q020), both runs got the same chunks and only the wording of the answer changed (the temperature-0 noise, lesson 4).
 - **`prompt_partial`** was judged on 15/26 questions only; `prompt_minimal`, `prompt_citations` and the temperature runs weren't judged.
 
-## The best configuration: `combined_v2_decomposition`
+## The recommended configuration: `combined_v2_strip_header`
 
-`experiments/combined_v2_decomposition.toml`: chunks 256/0 (equivalent to the baseline's 512/0: same chunks, same retrieval), the prompt `prompts/combined_v2.txt`, and `[decomposition] enabled = true`. It is the sum of two changes measured separately first:
+`experiments/combined_v2_strip_header.toml`: chunks 256/0 (equivalent to the baseline's 512/0: same chunks, same retrieval), `strip_header = true`, the prompt `prompts/combined_v2.txt`. Its quality-first variant `combined_v2_decomposition_strip_header` adds `[decomposition] enabled = true`. Three changes, each measured separately first:
 
 **1. The prompt (`combined_v2`)**: the baseline prompt with three changes:
 - « Je ne sais pas. » only when the extracts contain **no** element of answer; otherwise give the part they support and say what is missing (from `partial.txt`);
 - if the question names a patient, use **first** the extracts about that patient (a softer version of `patient.txt`: a drug notice concerns no patient, and the strict version could make the model ignore it);
 - after each piece of information, the number of the extract it comes from, `[2]` (from `citations.txt`).
 
-**2. Question decomposition** (§8): the LLM splits a question that needs several facts into self-contained sub-questions; each gets its own search and rerank, and the best chunks of each are interleaved up to 5 (how it works: `PLAN.md`, *How question decomposition works*). Simple questions come back unchanged.
+**2. Header removal** (`[chunking] strip_header = true`, `deduplicate_plan.md` step 2): each document's leading chunks are dropped when they hold nothing but header lines (hospital, identity, date, author, disclaimer) and no section heading. The patient's identity and the date stay in the patient line added to every chunk. Found by measuring redundancy: the near-duplicates among the chunks sent to the LLM were these headers (for Q005, 4 of the 5 chunks), which matched any question naming the patient, on the name alone. Without them, recall@5 0.913 → 0.943, hit@5 0.950 → 0.990, 4 questions better and none worse, the same gain under every configuration.
+
+**3. Question decomposition** (§8, optional): the LLM splits a question that needs several facts into self-contained sub-questions; each gets its own search and rerank, and the best chunks of each are interleaved up to 5 (how it works: `PLAN.md`, *How question decomposition works*). Simple questions come back unchanged.
 
 **Why, on quality:**
 
-| | baseline | combined_v2 (prompt only) | decomposition_gen (decomposition only) | **combined_v2_decomposition** |
-|---|---|---|---|---|
-| recall@5 / `multi_hop` recall@5 | 0.913 / 0.58 | 0.913 / 0.58 | 0.922 / 0.75 | 0.922 / **0.75** |
-| faithfulness (judge) | 0.881 | **1.000** | 0.920 | 0.987 |
-| answer relevancy (judge) | 0.910 | 0.917 | 0.919 | **0.936** |
-| correctness (judge) | 0.850 | 0.873 | 0.877 | **0.881** |
-| out_of_corpus refused | 6/6 | 6/6 | 6/6 | 6/6 |
-| wrong refusals | 7 | 5 | 7 | **3** |
-| citations to an existing extract / holding part of the answer | – | 100 % / 86.8 % | – | 100 % / **88.5 %** |
-| median latency | **944 ms** | 992 ms | 1697 ms | 1785 ms |
+| | baseline | combined_v2 (prompt) | combined_v2_decomposition | **combined_v2_strip_header** | combined_v2_decomposition_strip_header |
+|---|---|---|---|---|---|
+| recall@5 / hit@5 | 0.913 / 0.950 | 0.913 / 0.950 | 0.922 / 0.970 | **0.943 / 0.990** | 0.942 / 0.990 |
+| redundancy@5 | 0.051 | 0.045 | 0.027 | **0.007** | **0.006** |
+| faithfulness (judge) | 0.881 | **1.000** | 0.987 | 0.987 | 0.974 |
+| answer relevancy (judge) | 0.910 | 0.917 | 0.936 | 0.923 | **0.962** |
+| correctness (judge) | 0.850 | 0.873 | **0.881** | **0.881** | 0.873 |
+| out_of_corpus refused | 6/6 | 6/6 | 6/6 | 6/6 | 6/6 |
+| wrong refusals | 7 | 5 | 3 | 3 | **2** |
+| citations to an existing extract / holding part of the answer | – | 100 % / 86.8 % | 100 % / **88.5 %** | 100 % / 86.0 % | 100 % / 87.4 % |
+| median latency | **944 ms** | 992 ms | 1785 ms | 1003 ms | 1799 ms |
 
-The two changes add up: the prompt keeps the answers faithful and sourced, decomposition brings the facts the reranker used to push out. Together they bring the wrong refusals to 3, which neither reached alone. Newly answered, with their sources: **Q013** (« …ne devrait pas être utilisé… hyperkaliémie à 6,0 mmol/L [5]… contre-indication selon la notice du médicament [2] », correctness 0.00 → 0.70), **Q072** (stop metformin, resume 48 h after), **Q089** (no ramipril with sacubitril/valsartan), Q078 (half). The most robust gains are those measured on 100 questions (`multi_hop` recall, wrong refusals); the judge's gains over `combined_v2` (+0.008 correctness) are within what one question moves on 26.
+The judge's differences between the last three columns (±0.01 on correctness) are within what one question moves on 26; the robust differences are measured on 100 questions: retrieval and wrong refusals.
 
-**Why, on cost and response time:** the same models as the baseline, so the same GPU footprint (≈ 11 GB for embedder, reranker and generator). But decomposition adds one LLM call per question and a second search + rerank for the 45 % of questions it splits: median latency **1785 ms** vs 992 ms for `combined_v2`. **When latency matters, `combined_v2` is the better trade-off**: it keeps faithfulness 1.000 and citations at the baseline's speed, and loses only the `multi_hop` gains.
+**Prompt and decomposition** (before header removal): the two changes add up: the prompt keeps the answers faithful and sourced, decomposition brings the facts the reranker used to push out. Together they bring the wrong refusals to 3, which neither reached alone. Newly answered, with their sources: **Q013** (« …ne devrait pas être utilisé… hyperkaliémie à 6,0 mmol/L [5]… contre-indication selon la notice du médicament [2] », correctness 0.00 → 0.70), **Q072** (stop metformin, resume 48 h after), **Q089** (no ramipril with sacubitril/valsartan), Q078 (half). The most robust gains are those measured on 100 questions (`multi_hop` recall, wrong refusals); the judge's gains over `combined_v2` (+0.008 correctness) are within what one question moves on 26.
+
+**Header removal then makes most of decomposition unnecessary**: `combined_v2_strip_header` also answers Q013 and Q078 (their second fact now reaches the top 5 without a second search) and reaches decomposition's 3 wrong refusals and correctness 0.881. What only decomposition still brings are the chained questions **Q072** (metformin stopped for 48 h around the contrast injection) and **Q089** (no ramipril with sacubitril/valsartan), answered by `combined_v2_decomposition_strip_header` (2 wrong refusals). Q013 shows the difference in depth: without decomposition the notice's *indication* chunks come up, not its contraindication, and the answer says « les extraits ne permettent pas de déterminer » (correctness 0, not counted as a refusal).
+
+**Why, on cost and response time:** the same models as the baseline, so the same GPU footprint (≈ 11 GB for embedder, reranker and generator). Header removal costs nothing at query time and halves the indexing time (24 % fewer chunks). Decomposition adds one LLM call per question and a second search + rerank for the 45 % of questions it splits: median latency **1.8 s** vs 1.0 s. **Hence `combined_v2_strip_header` as the recommendation**, and decomposition only if the chained questions matter more than latency.
 
 **What it doesn't fix, or breaks:** decomposition splits 45 of the 106 questions, not only the 12 `multi_hop` ones, and some lose their evidence: Q052 (`temporal`, recall 1.0 → 0.0, now refused), Q086 and Q090 (recall 1.0 → 0.5); Q017 and Q020 lose correctness. Q071 and Q012 stay refused (see the failures below).
 
 **Recommended next additions** (each measured on its own, not yet together with this configuration):
-- **split only the questions that need it** (a stricter decomposition prompt, or only questions naming both a patient and a drug): it would keep the `multi_hop` gains without the Q052 / Q086 / Q090 regressions, and cut most of the extra latency;
+- **split only the questions that need it** (a gate before decomposition): it would keep the chained-question gains (Q072, Q089) without the Q052 / Q086 / Q090 regressions, and pay the extra latency only on the questions split (`PLAN.md`, step 29);
 - the **patient filter by name matching** (`[filters] patient = "names"`): free (no LLM, < 1 ms, 106/106 patients right), it removes the 10 % of chunks that belong to another patient: no measured gain in the answers, but in a medical system the wrong patient's data should never reach the LLM;
-- **fewer redundant chunks** (Jaccard, MMR, boilerplate removal): `deduplicate_plan.md`.
+- **fewer redundant chunks** beyond the headers (per-document cap, MMR): little left to remove (near_duplicates@5 0.028, 3 chunks over 106 questions), see `deduplicate_plan.md`.
 
 ## What changed nothing, or made results worse
 
@@ -138,6 +152,8 @@ The two changes add up: the prompt keeps the answers faithful and sourced, decom
 ## Three failures of the best configuration
 
 Analysed with `scripts/ask.py --id <question> --config experiments/combined_v2_decomposition.toml --full` and the stored ranks. Q013, the failure analysed first in the previous version of this report (a ranking failure: the patient's kaliémie at rank 12), is **fixed** by decomposition (correctness 0.00 → 0.70, above).
+
+**With header removal** (runs 60 and 61, checked on the stored answers): the three failures are identical in `combined_v2_decomposition_strip_header`. In `combined_v2_strip_header` (no decomposition), Q012 and Q034 fail the same way, but Q052, Q086 and Q090 are answered with recall@5 1.0, which confirms that their failure comes from decomposition.
 
 ### 1. Q012 (`multi_hop`): a chained question, which decomposition can't fix
 
@@ -178,9 +194,9 @@ Analysed with `scripts/ask.py --id <question> --config experiments/combined_v2_d
 ## Reproduce
 
 ```bash
-uv run python scripts/ingest.py experiments/combined_v2_decomposition.toml
-uv run python scripts/run_experiment.py experiments/combined_v2_decomposition.toml   # embedder, reranker, generator
-uv run python scripts/judge_experiment.py combined_v2_decomposition                  # judge only
+uv run python scripts/ingest.py experiments/combined_v2_strip_header.toml
+uv run python scripts/run_experiment.py experiments/combined_v2_strip_header.toml    # embedder, reranker, generator
+uv run python scripts/judge_experiment.py combined_v2_strip_header                   # judge only
 uv run python scripts/report.py                                                       # or: uv run streamlit run ui/app.py
 ```
 

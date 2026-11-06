@@ -95,7 +95,7 @@ Computed on every run from now on, and recomputable on the stored runs (their ch
 Each step is one change, measured with the deterministic metrics on 100 questions (retrieval only, ≈ 20 s), and with generation + judge only for what is kept.
 
 1. ✅ **The `redundancy@5` and `documents@5` metrics**, recomputed on the stored runs: they tell which configurations are redundant today (expected: the overlap ones, `top_k_10`, decomposition). **Done (5 Nov)**, see *Step 1 results* below.
-2. ✅ **Boilerplate removal at indexing**: done as **header removal** (`strip_header`), not by line frequency: see *Step 2 results*.
+2. ✅ **Boilerplate removal at indexing**: done as **header removal** (`strip_header`), not by line frequency: see *Step 2 results*, and *Step 2 with generation and the judge* (kept on every configuration).
 3. **Cap per document** (2 per document): the simple baseline for diversity.
 4. **MMR after the reranker**, Jaccard on the bodies, λ = 0.7 and 0.5 (`mmr_lambda_0.7`, `mmr_lambda_0.5`): compared with step 3 on `cross_notice`, `cross_patient`, `multi_hop` (recall@5) and on `temporal`, `dose` (no loss allowed).
 5. **MinHash + LSH**, as a demonstration: same pairs as exact Jaccard on the 1173 chunks? Then used for the index-time deduplication if the corpus were to grow.
@@ -154,4 +154,40 @@ Each step is one change, measured with the deterministic metrics on 100 question
 - **Why**: the header chunks matched every question naming a patient, on the name alone, and took places in the top 5; without them, those places go to content.
 - **The largest retrieval gain of the exercise, at no cost**: no LLM call, no latency, half the indexing time.
 
-**Next**: the same option with generation and the judge, on top of the best configurations (`strip_header_gen` vs `baseline`; `combined_v2_decomposition` + `strip_header`): does it keep decomposition's `multi_hop` gains while removing some of its need? Then steps 3–4 (per-document cap, MMR) on the remaining, much smaller, redundancy.
+## Step 2 with generation and the judge (5 Nov)
+
+The same option (`strip_header = true`, one line added) on the three references, with generation, then the judge on the 26-question sample: runs **59** (`strip_header_gen`, vs `baseline` 10), **60** (`combined_v2_strip_header`, vs `combined_v2` 39), **61** (`combined_v2_decomposition_strip_header`, vs `combined_v2_decomposition` 56). (Run 58 failed after 1 s, before any question.)
+
+| | baseline | + strip | combined_v2 | + strip | c_v2_decomp | + strip |
+|---|---|---|---|---|---|---|
+| run | 10 | 59 | 39 | 60 | 56 | 61 |
+| hit@5 | 0.950 | **0.990** | 0.950 | **0.990** | 0.970 | **0.990** |
+| recall@5 | 0.913 | **0.943** | 0.913 | **0.943** | 0.922 | **0.942** |
+| MRR@5 | 0.833 | 0.843 | 0.835 | 0.844 | 0.813 | 0.817 |
+| redundancy@5 | 0.051 | **0.007** | 0.045 | **0.007** | 0.027 | **0.006** |
+| near_duplicates@5 | 0.274 | 0.028 | 0.255 | 0.028 | 0.170 | 0.028 |
+| wrong refusals (/100) | 7 | 6 | 5 | **3** | 3 | **2** |
+| out_of_corpus refused | 6/6 | 6/6 | 6/6 | 6/6 | 6/6 | 6/6 |
+| faithfulness | 0.881 | 0.978 | 1.000 | 0.987 | 0.987 | 0.974 |
+| answer relevancy | 0.910 | 0.926 | 0.917 | 0.923 | 0.936 | **0.962** |
+| correctness | 0.850 | 0.842 | 0.873 | **0.881** | **0.881** | 0.873 |
+| median latency | 944 ms | 970 ms | 992 ms | 1003 ms | 1785 ms | 1799 ms |
+
+**Retrieval: the gain carries over to every configuration**, identically (the retrieval of run 59 is run 57's; decomposition adds nothing on top: 0.942 vs 0.943). The redundancy drops to ≈ 0.007 everywhere: there is almost nothing left for MMR to remove.
+
+**The judge's scores don't move beyond their noise** (±0.01 on correctness, one question changing by 0.2 moves the mean by 0.008). The one large move, baseline faithfulness 0.881 → 0.978, is **not** the option: for Q003, Q015 and Q020 the two runs retrieve **the same chunks** (indices shifted by one, the header chunk gone), only the wording of the answer changes (temperature 0 isn't reproducible, PLAN step 27), and the judge scores the new wording higher (in run 10 it penalised « calcul » read as "calculation").
+
+**The wrong refusals are where it shows**, question by question:
+
+- **`combined_v2` + strip (60) refuses 3, like decomposition (56) does**: Q013 and Q078 are no longer refused (the second fact now reaches the top 5). The remaining three, **Q071, Q072, Q089**, are *chained* `multi_hop` questions: the drug isn't named in the question (« sa corticothérapie », « son traitement du diabète », « ajouter du ramipril » to a patient on sacubitril/valsartan), so no search on the question alone finds the notice. Header removal can't fix that; only decomposition does.
+- **Decomposition + strip (61) refuses 2**: it answers Q072 (metformin stopped for 48 h) and Q089 (ramipril + sacubitril/valsartan contraindicated) correctly, and Q037 is no longer refused. Still refused: **Q071** (everywhere: « corticothérapie » never becomes « prednisone ») and **Q052** (decomposition's over-splitting, see RAPPORT).
+- **Not a refusal, but not an answer either**: Q013 in run 60 retrieves the suxamethonium notice's *indication* chunks and the bilan, but not the hyperkalaemia contraindication; the answer says « les extraits ne permettent pas de déterminer » (correctness 0). Runs 56 and 61 answer it.
+- Q061 in run 59 is a prompt artefact, not retrieval: the right answer followed by « Je ne sais pas. » (`strict.txt`); `combined_v2.txt` fixes it, with the same chunks.
+
+**Conclusions:**
+
+1. **`strip_header` is kept everywhere**: better retrieval at every configuration, the redundancy gone, 24 % fewer chunks, no extra latency, nothing lost.
+2. **It halves the case for decomposition.** `combined_v2_strip_header` has the correctness of `combined_v2_decomposition` (0.881), the same number of wrong refusals (3), faithfulness 0.987, at **1.0 s instead of 1.8 s**. What decomposition still adds is the chained questions (Q072, Q089), and it still over-splits Q052.
+3. **New best trade-off: `combined_v2_strip_header`.** On quality alone, `combined_v2_decomposition_strip_header` is ahead (2 wrong refusals, answer relevancy 0.962), at +80 % latency.
+
+**Next**: steps 3–4 (per-document cap, MMR) have little redundancy left to act on (near_duplicates@5 0.028: 3 chunks over 106 questions); they remain worth one retrieval-only run each, on top of `strip_header`, for `cross_*` diversity rather than for duplicates. The bigger remaining lever is the chained `multi_hop` questions, i.e. a decomposition that only triggers when the question needs a second fact (RAPPORT, *Improvements*).
