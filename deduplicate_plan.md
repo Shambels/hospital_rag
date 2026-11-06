@@ -1,6 +1,6 @@
 # Plan — avoiding redundant chunks
 
-How Jaccard similarity, MinHash + LSH and Maximal Marginal Relevance (MMR) would apply to this RAG, what else to consider, and in which order to try them. Each step below is one experiment, compared with one change at a time, as in `PLAN.md`. Done: steps 1 (redundancy metrics) and 2 (header removal, kept everywhere); step 3 prepared.
+How Jaccard similarity, MinHash + LSH and Maximal Marginal Relevance (MMR) would apply to this RAG, what else to consider, and in which order to try them. Each step below is one experiment, compared with one change at a time, as in `PLAN.md`. Done: steps 1 (redundancy metrics) and 2 (header removal, kept everywhere); step 3 (cap per document) measured and **not kept**.
 
 ## The three techniques, and when they act
 
@@ -96,7 +96,7 @@ Each step is one change, measured with the deterministic metrics on 100 question
 
 1. ✅ **The `redundancy@5` and `documents@5` metrics**, recomputed on the stored runs: they tell which configurations are redundant today (expected: the overlap ones, `top_k_10`, decomposition). **Done (5 Nov)**, see *Step 1 results* below.
 2. ✅ **Boilerplate removal at indexing**: done as **header removal** (`strip_header`), not by line frequency: see *Step 2 results*, and *Step 2 with generation and the judge* (kept on every configuration).
-3. **Cap per document** (2, then 1 per document): the simple baseline for diversity. **Prepared (6 Nov)**, see *Step 3: preparation*.
+3. **Cap per document** (2, then 1 per document): the simple baseline for diversity. **Done (6 Nov), not kept**: cap 2 changes nothing, cap 1 loses 8 questions; see *Step 3 results*.
 4. **MMR after the reranker**, Jaccard on the bodies, λ = 0.7 and 0.5 (`mmr_lambda_0.7`, `mmr_lambda_0.5`): compared with step 3 on `cross_notice`, `cross_patient`, `multi_hop` (recall@5) and on `temporal`, `dose` (no loss allowed).
 5. **MinHash + LSH**, as a demonstration: same pairs as exact Jaccard on the 1173 chunks? Then used for the index-time deduplication if the corpus were to grow.
 6. The best of 2–4 with generation and the judge, on top of the best configuration (`combined_v2_decomposition`, or `combined_v2` if latency matters).
@@ -216,3 +216,25 @@ max_per_document = 2
 | `strip_header_cap_1` | 1 | 5 distinct documents per question; gains on lists (`cross_notice`, `cross_patient`), losses likely on `split` and `buried` (an answer spread over two sections of one document) |
 
 Metrics: recall@5 and MRR@5 by type, `documents@5` (should rise to ≤ 5), and the questions improved / degraded. The Q052 / Q080 effect needs decomposition, hence the generator: if the cap at 1 doesn't cost too much on its own, one run of the gated configuration + cap 1, with generation.
+
+## Step 3 results (6 Nov)
+
+Runs **63** (`strip_header_cap_2`) and **64** (`strip_header_cap_1`), retrieval only, vs run **57** (`strip_header`):
+
+| Metric | 57: no cap | 63: cap 2 | 64: cap 1 |
+|---|---|---|---|
+| hit@5 | **0.990** | **0.990** | 0.930 |
+| recall@5 | **0.943** | **0.943** | 0.891 |
+| MRR@5 | **0.843** | **0.843** | 0.827 |
+| nDCG@5 | 0.828 | **0.831** | 0.806 |
+| documents@5 | 3.64 | 3.84 | 5.00 |
+| near_duplicates@5 | 0.028 | 0.028 | 0.038 |
+| chunks of another patient (single-patient questions) | 51 / 425 (31 q.) | 54 / 425 (33 q.) | **121 / 425 (62 q.)** |
+
+- **Cap 2: no effect.** The top 5 changes on some questions (documents@5 3.64 → 3.84) but no question's recall or MRR moves: the third chunk of a document it removes is never the evidence, and the chunk that replaces it isn't either. 3 more chunks of other patients.
+- **Cap 1: worse, 8 questions lost, 1 gained** (Q037, recall 0 → 0.5). Lost: `abbreviation` Q034, Q074 (1.00 → 0.75 for the type), `lay_language` Q029, Q099 (→ 0.75), `cross_patient` Q057, `cross_notice` Q058, `multi_hop` Q071. Even the list questions, which it was meant to help, lose.
+- **Why: a document's best-ranked chunk is often not its evidence.** In Q057 (« Quels patients ont reçu un stent sur l'artère interventriculaire antérieure ? »), each coronarography report's chunk 0 (indication) ranks above its chunk 1 (where the stent went): the cap keeps chunk 0 and drops the evidence. Q058: the furosemide notice's chunk 5 ranks above its chunk 6, the evidence. Q034: the second consultation chunk with « VEMS à 48 % » is dropped. The cap assumes "one chunk per document is enough"; with sections as chunks, the reranker's favourite section and the answering section are often two different ones.
+- **And the places it frees go to other patients.** For a question about one patient, the next-best documents are other patients' records: other-patient chunks more than double (51 → 121), in 62 questions instead of 31 (Q034: two chunks of patient 4100036 replace Mme Dupont's evidence). Diversity across documents works against the patient focus; it would need the patient filter (`[filters] patient = "names"`) to be safe.
+- **What it means for Q052 / Q080** (two chunks of one notice pushing out a record fact, under decomposition): a cap at 2 can't reach them, a cap at 1 costs far more than it could recover. Their fix belongs to the interleaving (the whole question's ranking first), not to a diversity step.
+
+**Conclusion and consequence for step 4 (MMR).** After header removal, the remaining duplicates are too few (near_duplicates@5 0.028) for diversity to help: cap 2 has nothing to remove, cap 1 removes evidence. MMR is a smoother version of the same trade (relevance against similarity to the chunks already picked, and chunks of one document are the most similar): it would need a λ close to 1 to avoid cap 1's losses, which is cap 2's "no effect". Step 4 is therefore **not worth running for this corpus**; step 5 (MinHash + LSH) remains as a learning exercise only. The redundancy problem was the header chunks, and step 2 solved it.
